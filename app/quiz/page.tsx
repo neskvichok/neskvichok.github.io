@@ -5,11 +5,15 @@ import { ModePicker } from "@/components/quiz/ModePicker";
 import { MultiSetPicker } from "@/components/quiz/MultiSetPicker";
 import type { QuizSet } from "@/lib/quiz-data/types";
 import { EducationMode } from "@/components/quiz/modes/EducationMode";
+import { AccuracyMode } from "@/components/quiz/modes/AccuracyMode";
+import { SpeedMode } from "@/components/quiz/modes/SpeedMode";
 import { addWordToSet, deleteWord, fetchSetsWithWords } from "@/lib/quiz-data/db";
 import { combineSets } from "@/lib/quiz-data/combined-sets";
 
 const MODES = {
-  education: { name: "Education", component: EducationMode, status: "ready" },
+  education: { name: "Навчання", component: EducationMode, status: "ready" },
+  accuracy: { name: "Точність", component: AccuracyMode, status: "ready" },
+  speed: { name: "Швидкість", component: SpeedMode, status: "ready" },
 };
 
 export default function QuizHomePage() {
