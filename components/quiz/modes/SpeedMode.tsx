@@ -16,6 +16,7 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [errors, setErrors] = useState(0);
+  const [skippedWords, setSkippedWords] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -143,7 +144,7 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
     if (!current || !isStarted || isFinished) return;
     
     setTotalAttempts(prev => prev + 1);
-    setErrors(prev => prev + 1);
+    setSkippedWords(prev => prev + 1);
     
     // Отримати наступне слово
     const nextWord = getNextWord();
@@ -254,6 +255,9 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
         </div>
         <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full">
           Помилок: {errors}
+        </div>
+        <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full">
+          Пропущено: {skippedWords}
         </div>
         <div className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
           Точність: {Math.round(accuracy)}%

@@ -15,6 +15,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [errors, setErrors] = useState(0);
+  const [skippedWords, setSkippedWords] = useState(0);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -112,6 +113,15 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
     const normalizedInput = normalizeText(input);
     const ok = acceptableAnswers.some(a => normalizeText(a) === normalizedInput);
     
+    // Додати логування для дебагу
+    console.log('CheckAnswer:', {
+      input: input,
+      normalizedInput: normalizedInput,
+      acceptableAnswers: acceptableAnswers,
+      normalizedAnswers: acceptableAnswers.map(a => normalizeText(a)),
+      ok: ok
+    });
+    
     setTotalAttempts(prev => prev + 1);
     
     if (ok) {
@@ -142,7 +152,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
     if (!current || !isStarted || isFinished) return;
     
     setTotalAttempts(prev => prev + 1);
-    setErrors(prev => prev + 1);
+    setSkippedWords(prev => prev + 1);
     
     // Знайти наступне незавершене слово
     const nextWord = words.find(w => !completedWords.has(w.id) && w.id !== current.id);
@@ -159,6 +169,15 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
     if (!current || !isStarted || isFinished) return;
     const normalizedInput = normalizeText(inputValue);
     const ok = acceptableAnswers.some(a => normalizeText(a) === normalizedInput);
+    
+    // Додати логування для дебагу
+    console.log('AutoCheckAnswer:', {
+      inputValue: inputValue,
+      normalizedInput: normalizedInput,
+      acceptableAnswers: acceptableAnswers,
+      normalizedAnswers: acceptableAnswers.map(a => normalizeText(a)),
+      ok: ok
+    });
     
     if (ok) {
       checkAnswer();
@@ -214,6 +233,10 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
               <div className="text-2xl font-bold text-red-600">{errors}</div>
               <div className="text-sm text-red-700">Помилок</div>
             </div>
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">{skippedWords}</div>
+              <div className="text-sm text-yellow-700">Пропущено</div>
+            </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-gray-600">{formatTime(4 * 60 - timeLeft)}</div>
               <div className="text-sm text-gray-700">Час</div>
@@ -252,6 +275,9 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
         </div>
         <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full">
           Помилок: {errors}
+        </div>
+        <div className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+          Пропущено: {skippedWords}
         </div>
         <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
           Точність: {Math.round(accuracy)}%
