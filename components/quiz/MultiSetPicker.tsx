@@ -3,28 +3,39 @@ import type { QuizSet } from "@/lib/quiz-data/types";
 export function MultiSetPicker({ 
   sets, 
   selectedSetIds, 
-  onChange 
+  onChange,
+  mode = "education"
 }: { 
   sets: QuizSet[]; 
   selectedSetIds: string[]; 
-  onChange: (setIds: string[]) => void 
+  onChange: (setIds: string[]) => void;
+  mode?: "education" | "accuracy" | "speed";
 }) {
   const toggleSet = (setId: string) => {
+    const isAccuracyOrSpeed = mode === "accuracy" || mode === "speed";
+    
     if (selectedSetIds.includes(setId)) {
-      // Якщо знімаємо вибір з "Всі слова", просто видаляємо його
-      if (setId === 'all-words-combined') {
-        onChange(selectedSetIds.filter(id => id !== setId));
-      } else {
-        // Якщо знімаємо вибір з звичайного набору, видаляємо його
-        onChange(selectedSetIds.filter(id => id !== setId));
-      }
+      // Знімаємо вибір
+      onChange(selectedSetIds.filter(id => id !== setId));
     } else {
-      // Якщо вибираємо "Всі слова", очищаємо всі інші вибори
-      if (setId === 'all-words-combined') {
-        onChange([setId]);
+      // Додаємо вибір
+      if (isAccuracyOrSpeed) {
+        // Для Accuracy і Speed тільки один набір або "Всі слова"
+        if (setId === 'all-words-combined') {
+          onChange([setId]);
+        } else {
+          // Якщо вибираємо звичайний набір, замінюємо всі вибори
+          onChange([setId]);
+        }
       } else {
-        // Якщо вибираємо звичайний набір, видаляємо "Всі слова" і додаємо цей
-        onChange(selectedSetIds.filter(id => id !== 'all-words-combined').concat(setId));
+        // Для Education дозволяємо множинний вибір
+        if (setId === 'all-words-combined') {
+          // "Всі слова" ексклюзивно
+          onChange([setId]);
+        } else {
+          // Додаємо до існуючих, але видаляємо "Всі слова"
+          onChange(selectedSetIds.filter(id => id !== 'all-words-combined').concat(setId));
+        }
       }
     }
   };

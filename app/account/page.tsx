@@ -137,6 +137,10 @@ export default function AccountPage() {
       // Розрахувати статистику для всіх слів
       const allWordsStats = calculateAllWordsStats(accuracyResults.data || [], speedResults.data || [], userProgress.data || [], sets.data || []);
       
+      console.log('All Words stats:', allWordsStats);
+      console.log('All Words accuracy results:', accuracyResults.data?.filter(r => r.set_id === 'all-words-combined'));
+      console.log('All Words speed results:', speedResults.data?.filter(r => r.set_id === 'all-words-combined'));
+      
       setStats({
         education: educationStats,
         accuracy: accuracyStats,

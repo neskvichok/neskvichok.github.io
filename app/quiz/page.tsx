@@ -22,6 +22,18 @@ export default function QuizHomePage() {
   const [sets, setSets] = useState<QuizSet[]>([]);
   const [selectedSetIds, setSelectedSetIds] = useState<string[]>([]);
   const [selectedMode, setSelectedMode] = useState<keyof typeof MODES>("education");
+  
+  // Обмежуємо вибір наборів при зміні режиму
+  const handleModeChange = (mode: keyof typeof MODES) => {
+    setSelectedMode(mode);
+    
+    // Якщо переключаємося на Accuracy або Speed і вибрано більше одного набору
+    if ((mode === "accuracy" || mode === "speed") && selectedSetIds.length > 1) {
+      // Залишаємо тільки перший вибраний набір або "Всі слова"
+      const firstSetId = selectedSetIds.find(id => id === 'all-words-combined') || selectedSetIds[0];
+      setSelectedSetIds([firstSetId]);
+    }
+  };
   const [isGameActive, setIsGameActive] = useState(false);
  
   const selectedSet = useMemo(() => {
@@ -109,7 +121,7 @@ export default function QuizHomePage() {
           {!isGameActive && (
             <div className="lg:w-80">
               <div className="card p-4 mb-4">
-                <ModePicker modes={MODES} value={selectedMode} onChange={(v) => setSelectedMode(v as any)} />
+                <ModePicker modes={MODES} value={selectedMode} onChange={(v) => handleModeChange(v as any)} />
               </div>
               <div className="card p-4">
                 <h3 className="text-lg font-semibold mb-4">Набори слів</h3>
@@ -123,7 +135,8 @@ export default function QuizHomePage() {
                 <MultiSetPicker 
                   sets={sets} 
                   selectedSetIds={selectedSetIds} 
-                  onChange={setSelectedSetIds} 
+                  onChange={setSelectedSetIds}
+                  mode={selectedMode}
                 />
               </div>
             </div>
