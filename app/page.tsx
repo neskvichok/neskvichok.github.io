@@ -44,6 +44,7 @@ export default function Home() {
           <>
             <Link className="btn btn-primary" href={withBasePath("/quiz")}>Почати квіз</Link>
             <Link className="btn btn-ghost" href={withBasePath("/quiz/manage")}>Керувати наборами</Link>
+            <Link className="btn btn-ghost" href={withBasePath("/account")}>Мій профіль</Link>
           </>
         ) : (
           <>

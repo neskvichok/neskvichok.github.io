@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Layout } from "@/components/quiz/Layout";
 import { ModePicker } from "@/components/quiz/ModePicker";
 import { MultiSetPicker } from "@/components/quiz/MultiSetPicker";
@@ -9,6 +10,7 @@ import { AccuracyMode } from "@/components/quiz/modes/AccuracyMode";
 import { SpeedMode } from "@/components/quiz/modes/SpeedMode";
 import { addWordToSet, deleteWord, fetchSetsWithWords } from "@/lib/quiz-data/db";
 import { combineSets } from "@/lib/quiz-data/combined-sets";
+import { withBasePath } from "@/lib/utils";
 
 const MODES = {
   education: { name: "Навчання", component: EducationMode, status: "ready" },
@@ -59,8 +61,11 @@ export default function QuizHomePage() {
   return (
     <Layout>
       <header className="pl-0 pr-2 md:pr-4">
-        <div>
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Quiz Trainer</h1>
+          <Link className="btn btn-ghost text-sm" href={withBasePath("/account")}>
+            📊 Мій профіль
+          </Link>
         </div>
       </header>
 
