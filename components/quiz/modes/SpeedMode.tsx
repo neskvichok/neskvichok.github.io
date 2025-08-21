@@ -159,7 +159,24 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
     const ok = acceptableAnswers.some(a => normalizeText(a) === normalizedInput);
     
     if (ok) {
-      checkAnswer();
+      // Викликати checkAnswer з правильним inputValue
+      const normalizedInputForCheck = normalizeText(inputValue);
+      const okForCheck = acceptableAnswers.some(a => normalizeText(a) === normalizedInputForCheck);
+      
+      setTotalAttempts(prev => prev + 1);
+      
+      if (okForCheck) {
+        setCorrectAnswers(prev => prev + 1);
+        // Позначити слово як використане
+        setUsedWords(prev => new Set([...prev, current.id]));
+        // Отримати наступне слово
+        const nextWord = getNextWord();
+        setCurrent(nextWord);
+      } else {
+        setErrors(prev => prev + 1);
+      }
+      
+      setInput("");
     }
   }
 

@@ -180,7 +180,34 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
     });
     
     if (ok) {
-      checkAnswer();
+      // Викликати checkAnswer з правильним inputValue
+      const normalizedInputForCheck = normalizeText(inputValue);
+      const okForCheck = acceptableAnswers.some(a => normalizeText(a) === normalizedInputForCheck);
+      
+      setTotalAttempts(prev => prev + 1);
+      
+      if (okForCheck) {
+        setCorrectAnswers(prev => prev + 1);
+        // Позначити слово як завершене
+        setCompletedWords(prev => new Set([...prev, current.id]));
+        
+        // Перевірити чи всі слова завершені
+        if (completedWords.size + 1 >= words.length) {
+          finishGame();
+        } else {
+          // Знайти наступне незавершене слово
+          const nextWord = words.find(w => !completedWords.has(w.id) && w.id !== current.id);
+          if (nextWord) {
+            setCurrent(nextWord);
+          } else {
+            finishGame();
+          }
+        }
+      } else {
+        setErrors(prev => prev + 1);
+      }
+      
+      setInput("");
     }
   }
 
