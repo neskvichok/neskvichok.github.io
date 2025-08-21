@@ -14,6 +14,7 @@ interface SetStats {
   bestSpeed: string;
   learnedWords: number;
   totalWords: number;
+  isAllWords?: boolean;
 }
 
 interface QuizStats {
@@ -222,9 +223,22 @@ export default function AccountPage() {
     const allWordsAccuracyResults = accuracyResults.filter(r => r.set_id === 'all-words-combined');
     const allWordsSpeedResults = speedResults.filter(r => r.set_id === 'all-words-combined');
     
-    // Якщо немає результатів для "Всі слова", повертаємо нульову статистику
+    // Підраховуємо статистику вивчених слів для всіх наборів
+    const allProgress = userProgress; // Всі слова з усіх наборів
+    const uniqueWords = new Set(allProgress.map(p => p.word_id));
+    const learnedWords = allProgress.filter(p => p.short_memory > 15).length;
+    const totalUniqueWords = uniqueWords.size;
+    
+    // Якщо немає результатів для "Всі слова", повертаємо тільки статистику навчання
     if (allWordsAccuracyResults.length === 0 && allWordsSpeedResults.length === 0) {
-      return { totalGames: 0, totalWords: 0, averageAccuracy: 0, bestSpeed: 0, bestAccuracy: 0, totalTime: 0 };
+      return { 
+        totalGames: 0, 
+        totalWords: learnedWords, // Показуємо вивчені слова
+        averageAccuracy: 0, 
+        bestSpeed: 0, 
+        bestAccuracy: 0, 
+        totalTime: 0 
+      };
     }
 
     // Підраховуємо загальну статистику
@@ -251,7 +265,7 @@ export default function AccountPage() {
 
     return {
       totalGames,
-      totalWords,
+      totalWords: learnedWords, // Показуємо вивчені слова замість слів з ігор
       averageAccuracy: Math.round(averageAccuracy),
       bestSpeed: Math.round(bestSpeed),
       bestAccuracy: Math.round(bestAccuracy),
@@ -317,8 +331,26 @@ export default function AccountPage() {
 
       // Спеціальна обробка для "Всі слова"
       let setName = setsMap.get(setId) || `Набір ${setId.slice(0, 8)}...`;
+      let isAllWords = false;
+      
       if (setId === 'all-words-combined') {
         setName = '🌍 Всі слова';
+        isAllWords = true;
+        
+        // Для "Всі слова" підраховуємо статистику по всіх наборах
+        const allProgress = userProgress; // Всі слова з усіх наборів
+        const allUniqueWords = new Set(allProgress.map(p => p.word_id));
+        const allLearnedWords = allProgress.filter(p => p.short_memory > 15).length;
+        
+        return {
+          setId,
+          setName,
+          bestAccuracy: bestAccuracyDisplay,
+          bestSpeed: bestSpeedDisplay,
+          learnedWords: allLearnedWords,
+          totalWords: allUniqueWords.size,
+          isAllWords: true
+        };
       }
 
       return {
@@ -327,7 +359,8 @@ export default function AccountPage() {
         bestAccuracy: bestAccuracyDisplay,
         bestSpeed: bestSpeedDisplay,
         learnedWords,
-        totalWords: uniqueWords.size
+        totalWords: uniqueWords.size,
+        isAllWords: false
       };
     });
   };
@@ -431,7 +464,7 @@ export default function AccountPage() {
       )}
 
       {/* Статистика для всіх слів */}
-      {stats && stats.allWords.totalGames > 0 && (
+      {stats && (stats.allWords.totalGames > 0 || stats.allWords.totalWords > 0) && (
         <div className="card p-6 bg-gradient-to-br from-yellow-50 to-yellow-100">
           <div className="flex items-center gap-4 mb-6">
             <div className="text-4xl">🌍</div>
@@ -448,7 +481,7 @@ export default function AccountPage() {
             </div>
             <div className="text-center p-4 bg-white rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">{stats.allWords.totalWords}</div>
-              <div className="text-sm text-yellow-700">Слів правильно</div>
+              <div className="text-sm text-yellow-700">Вивчено слів</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">{stats.allWords.averageAccuracy}%</div>
@@ -472,6 +505,41 @@ export default function AccountPage() {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800">Статистика по наборах</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Статистика "Всі слова" якщо є вивчені слова */}
+              {stats.allWords.totalWords > 0 && (
+                <div className="card p-6 border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-yellow-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-2xl">🌍</div>
+                    <h3 className="text-lg font-semibold text-yellow-800">Всі слова</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {/* Навчання */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Вивчено слів:</span>
+                      <span className="font-semibold text-green-600">
+                        {stats.allWords.totalWords}
+                      </span>
+                    </div>
+                    
+                    {/* Точність */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Найкраща точність:</span>
+                      <span className="font-semibold text-blue-600">
+                        {stats.allWords.bestAccuracy > 0 ? `${stats.allWords.bestAccuracy}%` : 'Немає'}
+                      </span>
+                    </div>
+                    
+                    {/* Швидкість */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Найкраща швидкість:</span>
+                      <span className="font-semibold text-red-600">
+                        {stats.allWords.bestSpeed > 0 ? `${stats.allWords.bestSpeed} сл/хв` : 'Немає'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {stats.sets.map((setStats) => (
                 <div key={setStats.setId} className="card p-6">
                   <div className="flex items-center gap-3 mb-4">
