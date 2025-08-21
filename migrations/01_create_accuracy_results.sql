@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS accuracy_results (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   uid UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  set_id TEXT NOT NULL,
+  set_id UUID REFERENCES public.sets(id) ON DELETE CASCADE,
   accuracy DECIMAL(5,2) NOT NULL,
   time_spent DECIMAL(8,2) NOT NULL,
   correct_answers INTEGER NOT NULL,
@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS accuracy_results (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   -- Індекси для швидкого пошуку
-  CONSTRAINT fk_accuracy_user FOREIGN KEY (uid) REFERENCES auth.users(id) ON DELETE CASCADE
+  CONSTRAINT fk_accuracy_user FOREIGN KEY (uid) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_accuracy_set FOREIGN KEY (set_id) REFERENCES public.sets(id) ON DELETE CASCADE
 );
 
 -- Створення індексів

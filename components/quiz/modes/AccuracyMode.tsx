@@ -69,10 +69,15 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
     const accuracy = totalAttempts > 0 ? (correctAnswers / totalAttempts) * 100 : 0;
     const timeSpent = (endTime - startTime) / 1000; // в секундах
     
+    // Для об'єднаних наборів зберігаємо результат для першого набору
+    const targetSetId = setDef.id.startsWith('combined-') 
+      ? setDef.id.replace('combined-', '').split('-')[0] 
+      : setDef.id;
+    
     const supabase = createClient();
     await supabase.from("accuracy_results").upsert({
       uid: userId,
-      set_id: setDef.id,
+      set_id: targetSetId,
       accuracy: Math.round(accuracy * 100) / 100,
       time_spent: Math.round(timeSpent * 100) / 100,
       correct_answers: correctAnswers,
