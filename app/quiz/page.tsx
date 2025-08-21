@@ -52,20 +52,16 @@ export default function QuizHomePage() {
 
   return (
     <Layout>
-      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 px-2 md:px-4">
+      <header className="pl-0 pr-2 md:pr-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Quiz Trainer</h1>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full md:w-auto">
-          <ModePicker modes={MODES} value={selectedMode} onChange={(v) => setSelectedMode(v as any)} />
-          <a className="btn btn-ghost" href="/quiz/manage">Керувати наборами</a>
-        </div>
       </header>
 
-      <main className="mt-6 px-2 md:px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
+      <main className="mt-2 pl-0 pr-2 md:pr-4">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Основний контент квізу */}
-          <div className="lg:col-span-5">
+          <div className="flex-1">
             <div className="card p-4 md:p-6">
               {selectedSet ? (
                 <SelectedModeComponent setDef={selectedSet} />
@@ -76,7 +72,10 @@ export default function QuizHomePage() {
           </div>
           
           {/* Бічна панель з наборами */}
-          <div className="lg:col-span-1">
+          <div className="lg:w-80">
+            <div className="card p-4 mb-4">
+              <ModePicker modes={MODES} value={selectedMode} onChange={(v) => setSelectedMode(v as any)} />
+            </div>
             <div className="card p-4">
               <h3 className="text-lg font-semibold mb-4">Набори слів</h3>
               <MultiSetPicker 

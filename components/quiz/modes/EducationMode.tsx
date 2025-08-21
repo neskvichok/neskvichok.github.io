@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { QuizSet, QuizWord } from "@/lib/quiz-data/types";
-import { getSetProgress, saveWordProgress, getSetStats, saveSetStats } from "@/lib/quiz-logic/persistence";
+import { getSetProgress, saveWordProgress } from "@/lib/quiz-logic/persistence";
 import { selectNextWord, isLearned, calcProgress } from "@/lib/quiz-logic/shortMemory";
 import { ProgressBar } from "@/components/quiz/ProgressBar";
 import { createClient } from "@/lib/supabase-client";
@@ -11,8 +11,6 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
   const [words, setWords] = useState<QuizWord[]>(() => setDef.words.map(w => ({ ...w, shortMemory: 0 })));
   const [current, setCurrent] = useState<QuizWord | null>(null);
   const [input, setInput] = useState("");
-  const [attempts, setAttempts] = useState(0);
-  const [correct, setCorrect] = useState(0);
   const [askedHistoryIds, setAskedHistoryIds] = useState<string[]>([]);
   const [feedbackWords, setFeedbackWords] = useState<Array<{ id: string; hint: string; answer: string; remaining: number }>>([]);
   const [blockedWords, setBlockedWords] = useState<string[]>([]);
@@ -27,18 +25,13 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const [progress, stats] = await Promise.all([
-        getSetProgress(userId, setDef.id),
-        getSetStats(userId, setDef.id),
-      ]);
+      const progress = await getSetProgress(userId, setDef.id);
       const merged = setDef.words.map(w => ({
         ...w,
         shortMemory: (progress as any)[w.id]?.shortMemory ?? 0,
       }));
       if (!mounted) return;
       setWords(merged);
-      setAttempts(stats.attempts ?? 0);
-      setCorrect(stats.correct ?? 0);
       // При первинному виборі також врахуємо історію (порожня на старті)
       let selectable = merged.filter(w => !isLearned(w) && !askedHistoryIds.includes(w.id) && !blockedWords.includes(w.id));
       if (selectable.length === 0) {
@@ -87,11 +80,11 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
     const newHistory = current ? [...askedHistoryIds, current.id].slice(-3) : askedHistoryIds;
     setAskedHistoryIds(newHistory);
 
-    // Зменшити лічильник для всіх feedback слів
+    // Зменшити лічильник для всіх feedback слів (крім поточного, якщо він щойно доданий) і видалити ті, що досягли 0
     setFeedbackWords(prev => {
       const updated = prev.map(word => ({
         ...word,
-        remaining: word.remaining - 1
+        remaining: word.id === current?.id ? word.remaining : word.remaining - 1
       })).filter(word => word.remaining > 0);
       
       // Оновити заблоковані слова - видалити ті, що досягли лічильника 0
@@ -183,10 +176,27 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
       .replace(/[^\wа-яіїєґ]/g, ''); // Видаляє всі символи крім букв і цифр
   }
 
+  // Автоматична перевірка під час введення
+  function autoCheckAnswer(inputValue: string) {
+    if (!current) return;
+    const normalizedInput = normalizeText(inputValue);
+    const ok = acceptableAnswers.some(a => normalizeText(a) === normalizedInput);
+    
+    if (ok) {
+      // Миттєва реакція без затримки
+      processAnswer(true);
+    }
+  }
+
   function checkAnswer() {
     if (!current) return;
     const normalizedInput = normalizeText(input);
     const ok = acceptableAnswers.some(a => normalizeText(a) === normalizedInput);
+    processAnswer(ok);
+  }
+
+  function processAnswer(ok: boolean) {
+    if (!current) return;
     
     if (!ok) {
       // Додати або оновити слово в feedback
@@ -201,7 +211,7 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
           };
           return updated;
         } else {
-          // Додати нове слово
+          // Додати нове слово з лічильником 5
           return [
             ...prev,
             {
@@ -217,16 +227,7 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
       setBlockedWords(prev => [...prev, current.id]);
     }
     
-    setAttempts(a => {
-      const next = a + 1;
-      saveSetStats(userId, setDef.id, { attempts: next, correct: ok ? (correct + 1) : correct });
-      return next;
-    });
-    setCorrect(c => {
-      const next = c + (ok ? 1 : 0);
-      saveSetStats(userId, setDef.id, { attempts: attempts + 1, correct: next });
-      return next;
-    });
+
     setInput("");
     setWordCounter(prev => prev + 1);
     applyResult(ok);
@@ -238,8 +239,6 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
   return (
     <div className="grid gap-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="badge">Attempts: {attempts}</div>
-        <div className="badge">Correct: {correct}</div>
         <div className="ml-auto w-full md:w-64">
           <ProgressBar value={progress} />
         </div>
@@ -276,7 +275,10 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
                 className="input"
                 placeholder="Введіть відповідь..."
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  autoCheckAnswer(e.target.value);
+                }}
                 onKeyDown={(e) => { if (e.key === 'Enter') checkAnswer(); }}
                 autoFocus
               />

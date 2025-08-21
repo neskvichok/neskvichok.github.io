@@ -50,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 user ? (
                   <>
                     <Link className="btn btn-ghost" href={withBasePath("/quiz")}>Квізи</Link>
+                    <Link className="btn btn-ghost" href={withBasePath("/quiz/manage")}>Керувати наборами</Link>
                     <Link href={withBasePath("/account/settings")} aria-label="Налаштування акаунту" className="w-8 h-8 rounded-full bg-black text-white grid place-items-center">
                       {(user.email?.[0] || 'A').toUpperCase()}
                     </Link>

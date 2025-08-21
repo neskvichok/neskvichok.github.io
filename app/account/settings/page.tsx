@@ -18,17 +18,13 @@ interface ProgressRow {
   short_memory: number;
 }
 
-interface StatsRow {
-  set_id: string;
-  attempts: number;
-  correct: number;
-}
+
 
 export default function AccountSettingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [sets, setSets] = useState<Set[]>([]);
   const [progressRows, setProgressRows] = useState<ProgressRow[]>([]);
-  const [statsRows, setStatsRows] = useState<StatsRow[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,11 +43,9 @@ export default function AccountSettingsPage() {
       Promise.all([
         supabase.from("sets").select("id, name, words:words(id)"),
         supabase.from("user_progress").select("set_id, short_memory").eq("uid", session.user.id),
-        supabase.from("user_set_stats").select("set_id, attempts, correct").eq("uid", session.user.id),
-      ]).then(([setsResult, progressResult, statsResult]) => {
+      ]).then(([setsResult, progressResult]) => {
         setSets(setsResult.data || []);
         setProgressRows(progressResult.data || []);
-        setStatsRows(statsResult.data || []);
         setLoading(false);
       });
     });
@@ -74,10 +68,7 @@ export default function AccountSettingsPage() {
     );
   }
 
-  const setIdToStats: Record<string, { attempts: number; correct: number }> = {};
-  statsRows.forEach((r) => { 
-    setIdToStats[r.set_id] = { attempts: r.attempts ?? 0, correct: r.correct ?? 0 }; 
-  });
+
 
   const groupedLearned: Record<string, number> = {};
   progressRows.forEach((r) => {
@@ -105,16 +96,11 @@ export default function AccountSettingsPage() {
           {sets.map((s) => {
             const total = s.words.length;
             const learned = groupedLearned[s.id] || 0;
-            const stats = setIdToStats[s.id] || { attempts: 0, correct: 0 };
             return (
               <div key={s.id} className="flex items-center justify-between border border-gray-200 rounded-xl p-3 text-sm">
                 <div>
                   <div className="font-medium">{s.name}</div>
                   <div className="text-gray-600">Вивчено: {learned}/{total}</div>
-                </div>
-                <div className="text-gray-700">
-                  <span className="mr-3">Спроби: {stats.attempts}</span>
-                  <span>Вірні: {stats.correct}</span>
                 </div>
               </div>
             );
