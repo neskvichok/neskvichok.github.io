@@ -20,6 +20,7 @@ export default function QuizHomePage() {
   const [sets, setSets] = useState<QuizSet[]>([]);
   const [selectedSetIds, setSelectedSetIds] = useState<string[]>([]);
   const [selectedMode, setSelectedMode] = useState<keyof typeof MODES>("education");
+  const [isGameActive, setIsGameActive] = useState(false);
   const selectedSet = useMemo(() => combineSets(sets, selectedSetIds), [sets, selectedSetIds]);
   const SelectedModeComponent = MODES[selectedMode].component;
 
@@ -76,19 +77,21 @@ export default function QuizHomePage() {
           </div>
           
           {/* Бічна панель з наборами */}
-          <div className="lg:w-80">
-            <div className="card p-4 mb-4">
-              <ModePicker modes={MODES} value={selectedMode} onChange={(v) => setSelectedMode(v as any)} />
+          {selectedMode === "education" && (
+            <div className="lg:w-80">
+              <div className="card p-4 mb-4">
+                <ModePicker modes={MODES} value={selectedMode} onChange={(v) => setSelectedMode(v as any)} />
+              </div>
+              <div className="card p-4">
+                <h3 className="text-lg font-semibold mb-4">Набори слів</h3>
+                <MultiSetPicker 
+                  sets={sets} 
+                  selectedSetIds={selectedSetIds} 
+                  onChange={setSelectedSetIds} 
+                />
+              </div>
             </div>
-            <div className="card p-4">
-              <h3 className="text-lg font-semibold mb-4">Набори слів</h3>
-              <MultiSetPicker 
-                sets={sets} 
-                selectedSetIds={selectedSetIds} 
-                onChange={setSelectedSetIds} 
-              />
-            </div>
-          </div>
+          )}
         </div>
       </main>
     </Layout>

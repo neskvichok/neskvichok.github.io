@@ -6,8 +6,7 @@ import { createClient } from "@/lib/supabase-client";
 
 export function SpeedMode({ setDef }: { setDef: QuizSet }) {
   const [userId, setUserId] = useState<string | null>(null);
-  const [allWords, setAllWords] = useState<QuizWord[]>([]);
-  const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
+  const [wordQueue, setWordQueue] = useState<QuizWord[]>([]);
   const [current, setCurrent] = useState<QuizWord | null>(null);
   const [input, setInput] = useState("");
   const [timeLeft, setTimeLeft] = useState(4 * 60); // 4 хвилини в секундах
@@ -27,9 +26,9 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
   }, []);
 
   useEffect(() => {
-    // Перемішати всі слова
+    // Перемішати всі слова і створити чергу
     const shuffled = [...setDef.words].sort(() => Math.random() - 0.5);
-    setAllWords(shuffled);
+    setWordQueue(shuffled);
     setCurrent(shuffled[0] || null);
   }, [setDef]);
 
@@ -95,15 +94,13 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
   };
 
   const getNextWord = () => {
-    const availableWords = allWords.filter(word => !usedWords.has(word.id));
-    if (availableWords.length === 0) {
-      // Якщо всі слова використані, перемішати знову
+    // Якщо черга порожня, перемішати всі слова знову
+    if (wordQueue.length === 0) {
       const shuffled = [...setDef.words].sort(() => Math.random() - 0.5);
-      setAllWords(shuffled);
-      setUsedWords(new Set());
+      setWordQueue(shuffled);
       return shuffled[0] || null;
     }
-    return availableWords[0] || null;
+    return wordQueue[0] || null;
   };
 
   const acceptableAnswers = useMemo(() => {
@@ -128,8 +125,8 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
     
     if (ok) {
       setCorrectAnswers(prev => prev + 1);
-      // Позначити слово як використане
-      setUsedWords(prev => new Set([...prev, current.id]));
+      // Видалити поточне слово з черги
+      setWordQueue(prev => prev.slice(1));
       // Отримати наступне слово
       const nextWord = getNextWord();
       setCurrent(nextWord);
@@ -145,6 +142,12 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
     
     setTotalAttempts(prev => prev + 1);
     setSkippedWords(prev => prev + 1);
+    
+    // Перемістити поточне слово в кінець черги
+    setWordQueue(prev => {
+      const newQueue = prev.slice(1); // Видалити перше слово
+      return [...newQueue, current]; // Додати в кінець
+    });
     
     // Отримати наступне слово
     const nextWord = getNextWord();
@@ -167,8 +170,8 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
       
       if (okForCheck) {
         setCorrectAnswers(prev => prev + 1);
-        // Позначити слово як використане
-        setUsedWords(prev => new Set([...prev, current.id]));
+        // Видалити поточне слово з черги
+        setWordQueue(prev => prev.slice(1));
         // Отримати наступне слово
         const nextWord = getNextWord();
         setCurrent(nextWord);
