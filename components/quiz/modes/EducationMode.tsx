@@ -113,13 +113,19 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
       // Показати вивчене слово для повторення
       const learnedWords = nextWords.filter(w => isLearned(w) && !newHistory.includes(w.id) && !blockedWords.includes(w.id));
       if (learnedWords.length > 0) {
-        pool = [selectNextWord(learnedWords)];
+        const selectedWord = selectNextWord(learnedWords);
+        if (selectedWord) {
+          pool = [selectedWord];
+        }
       }
       // Якщо прогрес 100%, можна показувати і невивчені слова для повторення
       if (pool.length === 0 && calcProgress(nextWords) === 100) {
         const allWords = nextWords.filter(w => !newHistory.includes(w.id) && !blockedWords.includes(w.id));
         if (allWords.length > 0) {
-          pool = [selectNextWord(allWords)];
+          const selectedWord = selectNextWord(allWords);
+          if (selectedWord) {
+            pool = [selectedWord];
+          }
         }
       }
     }
