@@ -52,7 +52,7 @@ export default function QuizHomePage() {
 
   return (
     <Layout>
-      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 px-4 md:px-8 max-w-7xl mx-auto">
+      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 px-2 md:px-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Quiz Trainer</h1>
         </div>
@@ -62,10 +62,10 @@ export default function QuizHomePage() {
         </div>
       </header>
 
-      <main className="mt-6 px-4 md:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+      <main className="mt-6 px-2 md:px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
           {/* Основний контент квізу */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-5">
             <div className="card p-4 md:p-6">
               {selectedSet ? (
                 <SelectedModeComponent setDef={selectedSet} />
