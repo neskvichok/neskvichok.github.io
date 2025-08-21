@@ -30,3 +30,24 @@ export function combineSets(sets: QuizSet[], selectedSetIds: string[]): QuizSet 
   
   return combinedSet;
 }
+
+export function createAllWordsSet(sets: QuizSet[]): QuizSet {
+  // Об'єднати всі слова з усіх наборів
+  const allWords: QuizWord[] = [];
+  const setNames: string[] = [];
+  
+  sets.forEach(set => {
+    setNames.push(set.name);
+    // Додати слова з поточного набору, додавши інформацію про оригінальний набір
+    allWords.push(...set.words.map(word => ({ ...word, originalSetId: set.id })));
+  });
+  
+  // Створити спеціальний набір "Всі слова"
+  const allWordsSet: QuizSet = {
+    id: 'all-words-combined',
+    name: 'Всі слова',
+    words: allWords
+  };
+  
+  return allWordsSet;
+}

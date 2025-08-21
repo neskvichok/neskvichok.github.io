@@ -80,7 +80,13 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
 
     if (current) {
       // Використовуємо originalSetId якщо є (для об'єднаних наборів), інакше setDef.id
-      const targetSetId = current.originalSetId || setDef.id;
+      let targetSetId = current.originalSetId || setDef.id;
+      
+      // Для "Всі слова" зберігаємо з оригінальним set_id слова
+      if (setDef.id === 'all-words-combined' && current.originalSetId) {
+        targetSetId = current.originalSetId;
+      }
+      
       await saveWordProgress(userId, targetSetId, current.id, {
         shortMemory: nextWords.find(w => w.id === current.id)?.shortMemory ?? 0,
       });

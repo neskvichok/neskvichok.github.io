@@ -17,9 +17,30 @@ export function MultiSetPicker({
     }
   };
 
+  // Підрахувати загальну кількість слів
+  const totalWords = sets.reduce((sum, set) => sum + set.words.length, 0);
+
   return (
     <div className="block">
       <div className="space-y-2">
+        {/* Опція "Всі слова" */}
+        <label className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-gray-50 bg-blue-50 border-blue-200">
+          <input
+            type="checkbox"
+            checked={selectedSetIds.includes('all-words-combined')}
+            onChange={() => toggleSet('all-words-combined')}
+            className="checkbox"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm truncate text-blue-800">🌍 Всі слова</div>
+            <div className="text-xs text-blue-600">{totalWords} слів з {sets.length} наборів</div>
+          </div>
+        </label>
+        
+        {/* Розділювач */}
+        <div className="border-t border-gray-200 my-2"></div>
+        
+        {/* Звичайні набори */}
         {sets.map((set) => (
           <label key={set.id} className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-gray-50">
             <input

@@ -91,7 +91,10 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
     
     // Для об'єднаних наборів зберігаємо результат для першого повного UUID
     let targetSetId = setDef.id;
-    if (setDef.id.startsWith('combined-')) {
+    if (setDef.id === 'all-words-combined') {
+      // Для "Всі слова" використовуємо спеціальний ID
+      targetSetId = 'all-words-combined';
+    } else if (setDef.id.startsWith('combined-')) {
       const setIds = setDef.id.replace('combined-', '').split('-');
       const fullUuid = setIds.find(id => id.length >= 32);
       if (fullUuid) {

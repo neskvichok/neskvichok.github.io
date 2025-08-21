@@ -219,6 +219,14 @@ export default function AccountPage() {
     // Створюємо мапу назв наборів
     const setsMap = new Map(sets.map(s => [s.id, s.name]));
 
+    // Додаємо спеціальний набір "Всі слова" якщо є результати
+    const allWordsAccuracyResults = accuracyResults.filter(r => r.set_id === 'all-words-combined');
+    const allWordsSpeedResults = speedResults.filter(r => r.set_id === 'all-words-combined');
+    
+    if (allWordsAccuracyResults.length > 0 || allWordsSpeedResults.length > 0) {
+      setIds.add('all-words-combined');
+    }
+
     return Array.from(setIds).map(setId => {
       // Найкращий результат в режимі точності для цього набору
       const setAccuracyResults = accuracyResults.filter(r => r.set_id === setId);
@@ -256,9 +264,15 @@ export default function AccountPage() {
       const uniqueWords = new Set(setProgress.map(p => p.word_id));
       const learnedWords = setProgress.filter(p => p.short_memory > 15).length;
 
+      // Спеціальна обробка для "Всі слова"
+      let setName = setsMap.get(setId) || `Набір ${setId.slice(0, 8)}...`;
+      if (setId === 'all-words-combined') {
+        setName = '🌍 Всі слова';
+      }
+
       return {
         setId,
-        setName: setsMap.get(setId) || `Набір ${setId.slice(0, 8)}...`,
+        setName,
         bestAccuracy: bestAccuracyDisplay,
         bestSpeed: bestSpeedDisplay,
         learnedWords,

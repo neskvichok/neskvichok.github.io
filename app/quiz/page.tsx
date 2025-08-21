@@ -9,7 +9,7 @@ import { EducationMode } from "@/components/quiz/modes/EducationMode";
 import { AccuracyMode } from "@/components/quiz/modes/AccuracyMode";
 import { SpeedMode } from "@/components/quiz/modes/SpeedMode";
 import { addWordToSet, deleteWord, fetchSetsWithWords } from "@/lib/quiz-data/db";
-import { combineSets } from "@/lib/quiz-data/combined-sets";
+import { combineSets, createAllWordsSet } from "@/lib/quiz-data/combined-sets";
 import { withBasePath } from "@/lib/utils";
 
 const MODES = {
@@ -24,7 +24,14 @@ export default function QuizHomePage() {
   const [selectedMode, setSelectedMode] = useState<keyof typeof MODES>("education");
   const [isGameActive, setIsGameActive] = useState(false);
  
-  const selectedSet = useMemo(() => combineSets(sets, selectedSetIds), [sets, selectedSetIds]);
+  const selectedSet = useMemo(() => {
+    // Якщо вибрано "Всі слова", створити спеціальний набір
+    if (selectedSetIds.includes('all-words-combined')) {
+      return createAllWordsSet(sets);
+    }
+    // Інакше використовувати звичайну логіку об'єднання
+    return combineSets(sets, selectedSetIds);
+  }, [sets, selectedSetIds]);
   const SelectedModeComponent = MODES[selectedMode].component;
 
   useEffect(() => {
