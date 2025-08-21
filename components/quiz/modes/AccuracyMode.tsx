@@ -132,20 +132,41 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
       // Перевірити чи всі слова завершені
       if (completedWords.size + 1 >= words.length) {
         finishGame();
-      } else {
-        // Знайти наступне незавершене слово
-        const nextWord = words.find(w => !completedWords.has(w.id) && w.id !== current.id);
-        if (nextWord) {
-          setCurrent(nextWord);
-        } else {
-          finishGame();
+              } else {
+          // Знайти наступне незавершене слово
+          const nextWord = getNextUncompletedWord();
+          if (nextWord) {
+            setCurrent(nextWord);
+          } else {
+            finishGame();
+          }
         }
-      }
     } else {
       setErrors(prev => prev + 1);
     }
     
     setInput("");
+  }
+
+  function getNextUncompletedWord() {
+    // Знайти всі незавершені слова
+    const uncompletedWords = words.filter(w => !completedWords.has(w.id));
+    
+    // Якщо всі слова завершені
+    if (uncompletedWords.length === 0) {
+      return null;
+    }
+    
+    // Якщо залишилося тільки поточне слово
+    if (uncompletedWords.length === 1 && uncompletedWords[0].id === current?.id) {
+      return null;
+    }
+    
+    // Знайти наступне слово після поточного
+    const currentIndex = uncompletedWords.findIndex(w => w.id === current?.id);
+    const nextIndex = (currentIndex + 1) % uncompletedWords.length;
+    
+    return uncompletedWords[nextIndex];
   }
 
   function skipWord() {
@@ -155,7 +176,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
     setSkippedWords(prev => prev + 1);
     
     // Знайти наступне незавершене слово
-    const nextWord = words.find(w => !completedWords.has(w.id) && w.id !== current.id);
+    const nextWord = getNextUncompletedWord();
     if (nextWord) {
       setCurrent(nextWord);
     } else {
@@ -196,7 +217,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
           finishGame();
         } else {
           // Знайти наступне незавершене слово
-          const nextWord = words.find(w => !completedWords.has(w.id) && w.id !== current.id);
+          const nextWord = getNextUncompletedWord();
           if (nextWord) {
             setCurrent(nextWord);
           } else {
