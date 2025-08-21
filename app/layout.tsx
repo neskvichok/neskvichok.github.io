@@ -1,37 +1,60 @@
-import type { Metadata } from "next";
+"use client";
+
 import "./globals.css";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase-client";
 import SignOutButton from "@/app/account/signout-button";
+import type { User } from "@supabase/supabase-js";
+import { withBasePath } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: "Quiz Trainer Next + Supabase",
-  description: "Styled like your React app, with Supabase auth."
-};
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <html lang="uk">
+      <head>
+        <title>Quiz Trainer - Інтерактивний Тренажер Слів</title>
+        <meta name="description" content="Сучасний веб-додаток для вивчення іноземних слів з використанням інтерактивних квізів" />
+      </head>
       <body>
         <nav className="bg-white border-b border-gray-200">
           <div className="container-nice flex h-14 items-center justify-between">
-            <Link href="/" className="font-semibold">QuizTrainer</Link>
+            <Link href={withBasePath("/")} className="font-semibold">QuizTrainer</Link>
             <div className="flex items-center gap-2">
-              {user ? (
-                <>
-                  <Link className="btn btn-ghost" href="/quiz">Квізи</Link>
-                  <Link href="/account/settings" aria-label="Налаштування акаунту" className="w-8 h-8 rounded-full bg-black text-white grid place-items-center">
-                    {(user.email?.[0] || 'A').toUpperCase()}
-                  </Link>
-                  <SignOutButton />
-                </>
-              ) : (
-                <>
-                  <Link className="btn btn-ghost" href="/auth/sign-in">Увійти</Link>
-                  <Link className="btn btn-primary" href="/auth/sign-up">Реєстрація</Link>
-                </>
+              {!loading && (
+                user ? (
+                  <>
+                    <Link className="btn btn-ghost" href={withBasePath("/quiz")}>Квізи</Link>
+                    <Link href={withBasePath("/account/settings")} aria-label="Налаштування акаунту" className="w-8 h-8 rounded-full bg-black text-white grid place-items-center">
+                      {(user.email?.[0] || 'A').toUpperCase()}
+                    </Link>
+                    <SignOutButton />
+                  </>
+                ) : (
+                  <>
+                    <Link className="btn btn-ghost" href={withBasePath("/auth/sign-in")}>Увійти</Link>
+                    <Link className="btn btn-primary" href={withBasePath("/auth/sign-up")}>Реєстрація</Link>
+                  </>
+                )
               )}
             </div>
           </div>

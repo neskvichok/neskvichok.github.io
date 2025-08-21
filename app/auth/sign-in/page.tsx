@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase-client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { withBasePath } from "@/lib/utils";
 
 export default function SignInPage() {
   const supabase = createClient();
@@ -18,7 +19,7 @@ export default function SignInPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) setError(error.message);
-    else router.push("/quiz");
+    else router.push(withBasePath("/quiz"));
   };
 
   return (
@@ -31,10 +32,10 @@ export default function SignInPage() {
         <button className="btn btn-primary w-full" disabled={loading}>{loading ? "Зачекайте..." : "Увійти"}</button>
       </form>
       <div className="text-sm text-gray-600 mt-3">
-        Немає акаунту? <Link href="/auth/sign-up" className="underline">Зареєструватися</Link>
+        Немає акаунту? <Link href={withBasePath("/auth/sign-up")} className="underline">Зареєструватися</Link>
       </div>
       <div className="text-sm text-gray-600 mt-1">
-        <Link href="/auth/reset" className="underline">Забули пароль?</Link>
+        <Link href={withBasePath("/auth/reset")} className="underline">Забули пароль?</Link>
       </div>
     </div>
   )

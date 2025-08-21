@@ -1,31 +1,86 @@
-import { createClient } from "@/lib/supabase-server";
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase-client";
 import Link from "next/link";
 import { LEARNED_THRESHOLD } from "@/lib/quiz-logic/shortMemory";
+import type { User } from "@supabase/supabase-js";
+import { withBasePath } from "@/lib/utils";
 
-export default async function AccountSettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+interface Set {
+  id: string;
+  name: string;
+  words: { id: string }[];
+}
+
+interface ProgressRow {
+  set_id: string;
+  short_memory: number;
+}
+
+interface StatsRow {
+  set_id: string;
+  attempts: number;
+  correct: number;
+}
+
+export default function AccountSettingsPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [sets, setSets] = useState<Set[]>([]);
+  const [progressRows, setProgressRows] = useState<ProgressRow[]>([]);
+  const [statsRows, setStatsRows] = useState<StatsRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Get user session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
+      
+      setUser(session.user);
+      
+      // Fetch data
+      Promise.all([
+        supabase.from("sets").select("id, name, words:words(id)"),
+        supabase.from("user_progress").select("set_id, short_memory").eq("uid", session.user.id),
+        supabase.from("user_set_stats").select("set_id, attempts, correct").eq("uid", session.user.id),
+      ]).then(([setsResult, progressResult, statsResult]) => {
+        setSets(setsResult.data || []);
+        setProgressRows(progressResult.data || []);
+        setStatsRows(statsResult.data || []);
+        setLoading(false);
+      });
+    });
+  }, []);
+
+  if (loading) {
     return (
-      <div className="max-w-md mx-auto card p-6">
-        <h1 className="text-xl font-semibold mb-2">Потрібна авторизація</h1>
-        <p className="text-gray-600">Будь ласка, <Link className="underline" href="/auth/sign-in">увійдіть</Link>.</p>
+      <div className="max-w-2xl mx-auto card p-6">
+        <div className="text-center">Завантаження...</div>
       </div>
     );
   }
 
-  // Дані для прогресу: набори (з кількістю слів), прогрес користувача, статистика по наборах
-  const [{ data: sets }, { data: progressRows }, { data: statsRows }] = await Promise.all([
-    supabase.from("sets").select("id, name, words:words(id)"),
-    supabase.from("user_progress").select("set_id, short_memory").eq("uid", user.id),
-    supabase.from("user_set_stats").select("set_id, attempts, correct").eq("uid", user.id),
-  ]);
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto card p-6">
+        <h1 className="text-xl font-semibold mb-2">Потрібна авторизація</h1>
+        <p className="text-gray-600">Будь ласка, <Link className="underline" href={withBasePath("/auth/sign-in")}>увійдіть</Link>.</p>
+      </div>
+    );
+  }
 
   const setIdToStats: Record<string, { attempts: number; correct: number }> = {};
-  (statsRows || []).forEach((r: any) => { setIdToStats[r.set_id] = { attempts: r.attempts ?? 0, correct: r.correct ?? 0 }; });
+  statsRows.forEach((r) => { 
+    setIdToStats[r.set_id] = { attempts: r.attempts ?? 0, correct: r.correct ?? 0 }; 
+  });
 
   const groupedLearned: Record<string, number> = {};
-  (progressRows || []).forEach((r: any) => {
+  progressRows.forEach((r) => {
     if ((r.short_memory ?? 0) > LEARNED_THRESHOLD) {
       groupedLearned[r.set_id] = (groupedLearned[r.set_id] || 0) + 1;
     }
@@ -44,11 +99,11 @@ export default async function AccountSettingsPage() {
       <div>
         <h2 className="text-lg font-semibold mb-2">Прогрес</h2>
         <div className="grid gap-2">
-          {(!sets || sets.length === 0) && (
+          {sets.length === 0 && (
             <div className="text-gray-600">Немає наборів.</div>
           )}
-          {(sets || []).map((s: any) => {
-            const total = (s.words || []).length;
+          {sets.map((s) => {
+            const total = s.words.length;
             const learned = groupedLearned[s.id] || 0;
             const stats = setIdToStats[s.id] || { attempts: 0, correct: 0 };
             return (
@@ -68,8 +123,8 @@ export default async function AccountSettingsPage() {
       </div>
 
       <div className="flex gap-2">
-        <Link className="btn btn-ghost" href="/quiz">До квізів</Link>
-        <Link className="btn btn-ghost" href="/quiz/manage">Керувати наборами</Link>
+        <Link className="btn btn-ghost" href={withBasePath("/quiz")}>До квізів</Link>
+        <Link className="btn btn-ghost" href={withBasePath("/quiz/manage")}>Керувати наборами</Link>
       </div>
     </div>
   );
