@@ -50,6 +50,14 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
       if (selectable.length === 0) {
         selectable = merged.filter(w => !askedHistoryIds.includes(w.id) && !blockedWords.includes(w.id));
       }
+      // Якщо все ще немає вибору, показуємо будь-яке слово
+      if (selectable.length === 0) {
+        selectable = merged.filter(w => !blockedWords.includes(w.id));
+      }
+      // Якщо всі слова заблоковані, показуємо будь-яке слово
+      if (selectable.length === 0) {
+        selectable = merged;
+      }
       setCurrent(selectable.length ? selectNextWord(selectable) : null);
       startedAtRef.current = performance.now();
     })();
@@ -151,6 +159,24 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
       if (pool.length === 0 && feedbackWords.length > 0) {
         pool = nextWords.filter(w => !isLearned(w));
         console.log("Using words despite feedback:", pool.length);
+      }
+    }
+    
+    // Якщо все ще немає слів (всі вивчені), показуємо будь-яке слово для повторення
+    if (pool.length === 0) {
+      pool = nextWords.filter(w => !newHistory.includes(w.id) && !blockedWords.includes(w.id));
+      console.log("All words learned, showing any word for repetition:", pool.length);
+      
+      if (pool.length === 0) {
+        // Якщо все ще немає вибору, показуємо будь-яке слово
+        pool = nextWords.filter(w => !blockedWords.includes(w.id));
+        console.log("Showing any unblocked word:", pool.length);
+      }
+      
+      if (pool.length === 0) {
+        // Якщо всі слова заблоковані, показуємо будь-яке слово
+        pool = nextWords;
+        console.log("All words blocked, showing any word:", pool.length);
       }
     }
     
@@ -291,7 +317,7 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
           </>
         ) : (
           <div className="text-gray-700">
-            Усі слова в наборі позначені як <b>вивчені</b> (shortMemory &gt; 15). Тепер можна повторювати всі слова!
+            Завантаження наступного слова...
           </div>
         )}
       </div>
