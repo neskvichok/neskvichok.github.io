@@ -416,6 +416,17 @@ export function AccuracyMode({ setDef, onGameStateChange }: { setDef: QuizSet; o
                 Пропустити
               </button>
             </div>
+            
+            {/* Кнопка здатися */}
+            <div className="mt-4 flex justify-center">
+              <button 
+                className="btn btn-error"
+                onClick={finishGame}
+                disabled={!isStarted || isFinished}
+              >
+                Здатися
+              </button>
+            </div>
           </>
         ) : (
           <div className="text-gray-700">Завантаження...</div>
