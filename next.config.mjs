@@ -6,8 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  basePath: process.env.NODE_ENV === 'production' ? '/neskvichok.github.io' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/neskvichok.github.io/' : '',
+  basePath: '',
+  assetPrefix: '',
   distDir: 'out'
 };
 export default nextConfig;
