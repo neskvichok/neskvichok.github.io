@@ -11,9 +11,21 @@ export function MultiSetPicker({
 }) {
   const toggleSet = (setId: string) => {
     if (selectedSetIds.includes(setId)) {
-      onChange(selectedSetIds.filter(id => id !== setId));
+      // Якщо знімаємо вибір з "Всі слова", просто видаляємо його
+      if (setId === 'all-words-combined') {
+        onChange(selectedSetIds.filter(id => id !== setId));
+      } else {
+        // Якщо знімаємо вибір з звичайного набору, видаляємо його
+        onChange(selectedSetIds.filter(id => id !== setId));
+      }
     } else {
-      onChange([...selectedSetIds, setId]);
+      // Якщо вибираємо "Всі слова", очищаємо всі інші вибори
+      if (setId === 'all-words-combined') {
+        onChange([setId]);
+      } else {
+        // Якщо вибираємо звичайний набір, видаляємо "Всі слова" і додаємо цей
+        onChange(selectedSetIds.filter(id => id !== 'all-words-combined').concat(setId));
+      }
     }
   };
 

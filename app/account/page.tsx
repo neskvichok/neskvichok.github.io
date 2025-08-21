@@ -30,6 +30,7 @@ interface ModeStats {
   accuracy: QuizStats;
   speed: QuizStats;
   sets: SetStats[];
+  allWords: QuizStats;
 }
 
 export default function AccountPage() {
@@ -133,11 +134,15 @@ export default function AccountPage() {
         });
       });
 
+      // Розрахувати статистику для всіх слів
+      const allWordsStats = calculateAllWordsStats(accuracyResults.data || [], speedResults.data || [], userProgress.data || [], sets.data || []);
+      
       setStats({
         education: educationStats,
         accuracy: accuracyStats,
         speed: speedStats,
-        sets: setsStats
+        sets: setsStats,
+        allWords: allWordsStats
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -197,6 +202,48 @@ export default function AccountPage() {
     const bestSpeed = Math.max(...results.map(r => r.words_per_minute || 0));
     const bestAccuracy = Math.max(...results.map(r => r.accuracy || 0));
     const totalTime = results.reduce((sum, r) => sum + (r.time_spent || 0), 0);
+
+    return {
+      totalGames,
+      totalWords,
+      averageAccuracy: Math.round(averageAccuracy),
+      bestSpeed: Math.round(bestSpeed),
+      bestAccuracy: Math.round(bestAccuracy),
+      totalTime
+    };
+  };
+
+  const calculateAllWordsStats = (accuracyResults: any[], speedResults: any[], userProgress: any[], sets: any[]): QuizStats => {
+    // Фільтруємо результати тільки для "Всі слова"
+    const allWordsAccuracyResults = accuracyResults.filter(r => r.set_id === 'all-words-combined');
+    const allWordsSpeedResults = speedResults.filter(r => r.set_id === 'all-words-combined');
+    
+    // Якщо немає результатів для "Всі слова", повертаємо нульову статистику
+    if (allWordsAccuracyResults.length === 0 && allWordsSpeedResults.length === 0) {
+      return { totalGames: 0, totalWords: 0, averageAccuracy: 0, bestSpeed: 0, bestAccuracy: 0, totalTime: 0 };
+    }
+
+    // Підраховуємо загальну статистику
+    const totalGames = allWordsAccuracyResults.length + allWordsSpeedResults.length;
+    const totalWords = allWordsAccuracyResults.reduce((sum, r) => sum + (r.correct_answers || 0), 0) +
+                      allWordsSpeedResults.reduce((sum, r) => sum + (r.correct_answers || 0), 0);
+    
+    // Середня точність
+    const allAccuracies = [
+      ...allWordsAccuracyResults.map(r => r.accuracy || 0),
+      ...allWordsSpeedResults.map(r => r.accuracy || 0)
+    ];
+    const averageAccuracy = allAccuracies.length > 0 ? allAccuracies.reduce((sum, acc) => sum + acc, 0) / allAccuracies.length : 0;
+    
+    // Найкраща швидкість
+    const bestSpeed = allWordsSpeedResults.length > 0 ? Math.max(...allWordsSpeedResults.map(r => r.words_per_minute || 0)) : 0;
+    
+    // Найкраща точність
+    const bestAccuracy = allAccuracies.length > 0 ? Math.max(...allAccuracies) : 0;
+    
+    // Загальний час
+    const totalTime = allWordsAccuracyResults.reduce((sum, r) => sum + (r.time_spent || 0), 0) +
+                     allWordsSpeedResults.reduce((sum, r) => sum + (r.time_spent || 0), 0);
 
     return {
       totalGames,
@@ -374,6 +421,38 @@ export default function AccountPage() {
                 <p className="text-purple-700">В режимах точності та швидкості</p>
               </div>
               <div className="text-4xl">⏱️</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Статистика для всіх слів */}
+      {stats && stats.allWords.totalGames > 0 && (
+        <div className="card p-6 bg-gradient-to-br from-yellow-50 to-yellow-100">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="text-4xl">🌍</div>
+            <div>
+              <h2 className="text-2xl font-bold text-yellow-800">Статистика "Всі слова"</h2>
+              <p className="text-yellow-700">Результати тренування з усіма словами разом</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-white rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">{stats.allWords.totalGames}</div>
+              <div className="text-sm text-yellow-700">Ігор зіграно</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">{stats.allWords.totalWords}</div>
+              <div className="text-sm text-yellow-700">Слів правильно</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">{stats.allWords.averageAccuracy}%</div>
+              <div className="text-sm text-yellow-700">Середня точність</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">{stats.allWords.bestSpeed}</div>
+              <div className="text-sm text-yellow-700">Найкраща швидкість (сл/хв)</div>
             </div>
           </div>
         </div>

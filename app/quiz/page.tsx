@@ -25,13 +25,26 @@ export default function QuizHomePage() {
   const [isGameActive, setIsGameActive] = useState(false);
  
   const selectedSet = useMemo(() => {
-    // Якщо вибрано "Всі слова", створити спеціальний набір
-    if (selectedSetIds.includes('all-words-combined')) {
-      return createAllWordsSet(sets);
+    // Для режимів Accuracy і Speed обмежуємо вибір до одного набору
+    if (selectedMode === "accuracy" || selectedMode === "speed") {
+      if (selectedSetIds.includes('all-words-combined')) {
+        return createAllWordsSet(sets);
+      } else if (selectedSetIds.length > 1) {
+        // Якщо вибрано більше одного набору, беремо тільки перший
+        const firstSetId = selectedSetIds[0];
+        return combineSets(sets, [firstSetId]);
+      } else if (selectedSetIds.length === 1) {
+        return combineSets(sets, selectedSetIds);
+      }
+    } else {
+      // Для режиму Education дозволяємо множинний вибір
+      if (selectedSetIds.includes('all-words-combined')) {
+        return createAllWordsSet(sets);
+      }
+      return combineSets(sets, selectedSetIds);
     }
-    // Інакше використовувати звичайну логіку об'єднання
-    return combineSets(sets, selectedSetIds);
-  }, [sets, selectedSetIds]);
+    return null;
+  }, [sets, selectedSetIds, selectedMode]);
   const SelectedModeComponent = MODES[selectedMode].component;
 
   useEffect(() => {
@@ -100,6 +113,13 @@ export default function QuizHomePage() {
               </div>
               <div className="card p-4">
                 <h3 className="text-lg font-semibold mb-4">Набори слів</h3>
+                {(selectedMode === "accuracy" || selectedMode === "speed") && (
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      💡 Для режимів <strong>{selectedMode === "accuracy" ? "Точність" : "Швидкість"}</strong> можна вибрати тільки один набір або "Всі слова"
+                    </p>
+                  </div>
+                )}
                 <MultiSetPicker 
                   sets={sets} 
                   selectedSetIds={selectedSetIds} 
