@@ -75,8 +75,19 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
       ? setDef.id.replace('combined-', '').split('-')[0] 
       : setDef.id;
     
+    console.log('Saving speed results:', {
+      userId,
+      targetSetId,
+      accuracy,
+      timeSpent,
+      wordsPerMinute,
+      correctAnswers,
+      totalAttempts,
+      errors
+    });
+    
     const supabase = createClient();
-    await supabase.from("speed_results").upsert({
+    const { data, error } = await supabase.from("speed_results").upsert({
       uid: userId,
       set_id: targetSetId,
       words_per_minute: Math.round(wordsPerMinute * 100) / 100,
@@ -87,6 +98,12 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
       errors: errors,
       created_at: new Date().toISOString()
     });
+    
+    if (error) {
+      console.error('Error saving speed results:', error);
+    } else {
+      console.log('Speed results saved successfully:', data);
+    }
   };
 
   const startGame = () => {

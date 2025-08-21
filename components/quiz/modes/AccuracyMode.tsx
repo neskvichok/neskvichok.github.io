@@ -77,8 +77,19 @@ export function AccuracyMode({ setDef, onGameStateChange }: { setDef: QuizSet; o
       ? setDef.id.replace('combined-', '').split('-')[0] 
       : setDef.id;
     
+    console.log('Saving accuracy results:', {
+      userId,
+      targetSetId,
+      accuracy,
+      timeSpent,
+      correctAnswers,
+      totalAttempts,
+      errors,
+      currentWordIndex
+    });
+    
     const supabase = createClient();
-    await supabase.from("accuracy_results").upsert({
+    const { data, error } = await supabase.from("accuracy_results").upsert({
       uid: userId,
       set_id: targetSetId,
       accuracy: Math.round(accuracy * 100) / 100,
@@ -89,6 +100,12 @@ export function AccuracyMode({ setDef, onGameStateChange }: { setDef: QuizSet; o
       words_completed: currentWordIndex,
       created_at: new Date().toISOString()
     });
+    
+    if (error) {
+      console.error('Error saving accuracy results:', error);
+    } else {
+      console.log('Accuracy results saved successfully:', data);
+    }
   };
 
   const startGame = () => {

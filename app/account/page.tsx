@@ -70,7 +70,9 @@ export default function AccountPage() {
         accuracyResults: accuracyResults.data?.length || 0,
         speedResults: speedResults.data?.length || 0,
         userProgress: userProgress.data?.length || 0,
-        userProgressSample: userProgress.data?.slice(0, 3)
+        userProgressSample: userProgress.data?.slice(0, 3),
+        accuracyResultsData: accuracyResults.data,
+        speedResultsData: speedResults.data
       });
 
       // Обчислюємо статистику для режиму навчання
