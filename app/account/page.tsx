@@ -61,8 +61,8 @@ export default function AccountPage() {
     try {
       // Завантажуємо статистику для всіх режимів
       const [accuracyResults, speedResults, userProgress] = await Promise.all([
-        supabase.from('accuracy_results').select('*').eq('user_id', userId),
-        supabase.from('speed_results').select('*').eq('user_id', userId),
+        supabase.from('accuracy_results').select('*').eq('uid', userId),
+        supabase.from('speed_results').select('*').eq('uid', userId),
         supabase.from('user_progress').select('*').eq('uid', userId)
       ]);
 
@@ -111,7 +111,7 @@ export default function AccountPage() {
     const totalWords = results.reduce((sum, r) => sum + (r.correct_answers || 0), 0);
     const averageAccuracy = results.reduce((sum, r) => sum + (r.accuracy || 0), 0) / totalGames;
     const bestAccuracy = Math.max(...results.map(r => r.accuracy || 0));
-    const totalTime = results.reduce((sum, r) => sum + (r.time_taken || 0), 0);
+    const totalTime = results.reduce((sum, r) => sum + (r.time_spent || 0), 0);
 
     return {
       totalGames,
@@ -133,7 +133,7 @@ export default function AccountPage() {
     const averageAccuracy = results.reduce((sum, r) => sum + (r.accuracy || 0), 0) / totalGames;
     const bestSpeed = Math.max(...results.map(r => r.words_per_minute || 0));
     const bestAccuracy = Math.max(...results.map(r => r.accuracy || 0));
-    const totalTime = results.reduce((sum, r) => sum + (r.time_taken || 0), 0);
+    const totalTime = results.reduce((sum, r) => sum + (r.time_spent || 0), 0);
 
     return {
       totalGames,
