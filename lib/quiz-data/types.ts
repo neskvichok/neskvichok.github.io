@@ -3,6 +3,7 @@ export type QuizWord = {
   hint: string;
   answer: string | string[];
   shortMemory?: number;
+  originalSetId?: string;
 };
 
 export type QuizSet = {

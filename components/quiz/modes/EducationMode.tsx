@@ -71,7 +71,9 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
     setWords(nextWords);
 
     if (current) {
-      await saveWordProgress(userId, setDef.id, current.id, {
+      // Використовуємо originalSetId якщо є (для об'єднаних наборів), інакше setDef.id
+      const targetSetId = current.originalSetId || setDef.id;
+      await saveWordProgress(userId, targetSetId, current.id, {
         shortMemory: nextWords.find(w => w.id === current.id)?.shortMemory ?? 0,
       });
     }

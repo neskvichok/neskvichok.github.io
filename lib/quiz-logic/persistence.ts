@@ -8,6 +8,29 @@ export async function getSetProgress(userId: string | undefined | null, setId: s
   if (!userId) {
     try { return JSON.parse(localStorage.getItem(`guest:progress:${setId}`) || "{}"); } catch { return {}; }
   }
+  
+  // Якщо це об'єднаний набір, обробляємо кожен набір окремо
+  if (setId.startsWith("combined-")) {
+    const setIds = setId.replace("combined-", "").split("-");
+    const map: ProgressMap = {};
+    
+    for (const individualSetId of setIds) {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("user_progress")
+        .select("word_id, short_memory")
+        .eq("uid", userId)
+        .eq("set_id", individualSetId);
+      
+      if (!error && data) {
+        data.forEach((row: any) => {
+          map[row.word_id] = { shortMemory: row.short_memory ?? 0 };
+        });
+      }
+    }
+    return map;
+  }
+  
   const supabase = createClient();
   const { data, error } = await supabase
     .from("user_progress")

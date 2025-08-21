@@ -13,8 +13,8 @@ export function combineSets(sets: QuizSet[], selectedSetIds: string[]): QuizSet 
   
   selectedSets.forEach(set => {
     setNames.push(set.name);
-    // Додати слова з поточного набору, зберігаючи їх оригінальну структуру
-    allWords.push(...set.words);
+    // Додати слова з поточного набору, додавши інформацію про оригінальний набір
+    allWords.push(...set.words.map(word => ({ ...word, originalSetId: set.id })));
   });
   
   // Створити об'єднаний набір з правильним UUID
