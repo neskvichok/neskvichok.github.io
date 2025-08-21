@@ -1,16 +1,46 @@
-import { createClient } from "@/lib/supabase-server";
-import Link from "next/link";
-import SignOutButton from "./signout-button";
+"use client";
 
-export default async function AccountPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+import Link from "next/link";
+import { createClient } from "@/lib/supabase-client";
+import SignOutButton from "./signout-button";
+import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { withBasePath } from "@/lib/utils";
+
+export default function AccountPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-xl mx-auto card p-6">
+        <div className="text-center">Завантаження...</div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
       <div className="max-w-md mx-auto card p-6">
         <h1 className="text-xl font-semibold mb-2">Потрібна авторизація</h1>
-        <p className="text-gray-600">Будь ласка, <Link className="underline" href="/auth/sign-in">увійдіть</Link> щоб побачити акаунт.</p>
+        <p className="text-gray-600">Будь ласка, <Link className="underline" href={withBasePath("/auth/sign-in")}>увійдіть</Link> щоб побачити акаунт.</p>
       </div>
     )
   }
@@ -23,10 +53,10 @@ export default async function AccountPage() {
         <div className="text-gray-500">Email</div><div>{user.email}</div>
       </div>
       <div className="flex gap-2">
-        <Link className="btn btn-primary" href="/quiz">Перейти до квізів</Link>
-        <Link className="btn btn-ghost" href="/quiz/manage">Керувати наборами</Link>
+        <Link className="btn btn-primary" href={withBasePath("/quiz")}>Перейти до квізів</Link>
+        <Link className="btn btn-ghost" href={withBasePath("/quiz/manage")}>Керувати наборами</Link>
         <SignOutButton />
-        <Link className="btn btn-ghost" href="/">На головну</Link>
+        <Link className="btn btn-ghost" href={withBasePath("/")}>На головну</Link>
       </div>
     </div>
   )

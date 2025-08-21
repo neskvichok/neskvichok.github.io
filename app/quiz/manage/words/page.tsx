@@ -3,9 +3,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { addWordToSet, addWordsBulk, deleteWord, fetchSetWithWords, updateWord } from "@/lib/quiz-data/db";
 import type { QuizSet } from "@/lib/quiz-data/types";
+import { withBasePath } from "@/lib/utils";
+import { useSearchParams } from "next/navigation";
 
-export default function ManageSetWordsPage({ params }: { params: { setId: string } }) {
-  const { setId } = params;
+export default function ManageWordsPage() {
+  const searchParams = useSearchParams();
+  const setId = searchParams.get('setId');
+  
   const [setDef, setSetDef] = useState<QuizSet | null>(null);
   const [loading, setLoading] = useState(true);
   const [bulk, setBulk] = useState("");
@@ -14,6 +18,7 @@ export default function ManageSetWordsPage({ params }: { params: { setId: string
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
   async function refresh() {
+    if (!setId) return;
     setLoading(true);
     setSetDef(await fetchSetWithWords(setId));
     setLoading(false);
@@ -33,7 +38,13 @@ export default function ManageSetWordsPage({ params }: { params: { setId: string
     setRowEdits(next);
   }
 
-  useEffect(() => { refresh(); }, [setId]);
+  useEffect(() => { 
+    if (setId) {
+      refresh(); 
+    } else {
+      setLoading(false);
+    }
+  }, [setId]);
 
   function parseLine(input: string): { hint: string; answers: string[] } | null {
     const raw = input.trim();
@@ -60,6 +71,7 @@ export default function ManageSetWordsPage({ params }: { params: { setId: string
 
   async function onAddBulkSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!setId) return;
     const items = parseBulk(bulk);
     if (!items.length) return;
     // Перевірка на дублікати
@@ -116,12 +128,26 @@ export default function ManageSetWordsPage({ params }: { params: { setId: string
     }
   }
 
+  if (!setId) {
+    return (
+      <div className="container-nice py-6">
+        <div className="card p-6 text-center">
+          <h1 className="text-xl font-semibold mb-4">Виберіть набір</h1>
+          <p className="text-gray-600 mb-4">Для редагування слів потрібно вибрати набір.</p>
+          <Link className="btn btn-primary" href={withBasePath("/quiz/manage")}>
+            До наборів
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container-nice py-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Слова набору</h1>
         <div className="flex gap-2 items-center">
-          <Link className="btn btn-ghost" href="/quiz/manage">← До наборів</Link>
+          <Link className="btn btn-ghost" href={withBasePath("/quiz/manage")}>← До наборів</Link>
           <button className="btn btn-primary" disabled={!hasDirty} onClick={onSaveAll}>Зберегти зміни</button>
         </div>
       </div>
@@ -173,5 +199,3 @@ export default function ManageSetWordsPage({ params }: { params: { setId: string
     </div>
   );
 }
-
-

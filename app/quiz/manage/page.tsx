@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createSet, deleteSet, fetchSets, renameSet } from "@/lib/quiz-data/db";
+import { withBasePath } from "@/lib/utils";
 
 export default function ManageSetsPage() {
   const [sets, setSets] = useState<Array<{ id: string; name: string }>>([]);
@@ -63,7 +64,7 @@ export default function ManageSetsPage() {
             <div key={s.id} className="flex items-center justify-between">
               <div className="font-medium">{s.name}</div>
               <div className="flex gap-2">
-                <Link className="btn btn-ghost" href={`/quiz/manage/${s.id}`}>Редагувати слова</Link>
+                <Link className="btn btn-ghost" href={withBasePath(`/quiz/manage/words?setId=${s.id}`)}>Редагувати слова</Link>
                 <button className="btn btn-ghost" onClick={() => onRename(s.id, s.name)}>Перейменувати</button>
                 <button className="btn btn-ghost" onClick={() => onDelete(s.id)}>Видалити</button>
               </div>
