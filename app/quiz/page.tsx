@@ -20,7 +20,7 @@ export default function QuizHomePage() {
   const [sets, setSets] = useState<QuizSet[]>([]);
   const [selectedSetIds, setSelectedSetIds] = useState<string[]>([]);
   const [selectedMode, setSelectedMode] = useState<keyof typeof MODES>("education");
-  const [isGameActive, setIsGameActive] = useState(false);
+
   const selectedSet = useMemo(() => combineSets(sets, selectedSetIds), [sets, selectedSetIds]);
   const SelectedModeComponent = MODES[selectedMode].component;
 
