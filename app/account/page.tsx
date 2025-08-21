@@ -74,6 +74,11 @@ export default function AccountPage() {
         accuracyResultsData: accuracyResults.data,
         speedResultsData: speedResults.data
       });
+      
+      // Розгорнути об'єкти для детального перегляду
+      console.log('Accuracy results details:', accuracyResults.data);
+      console.log('Speed results details:', speedResults.data);
+      console.log('User progress details:', userProgress.data);
 
       // Обчислюємо статистику для режиму навчання
       const educationStats = calculateEducationStats(userProgress.data || []);
@@ -89,6 +94,11 @@ export default function AccountPage() {
         accuracy: accuracyStats,
         speed: speedStats
       });
+      
+      // Розгорнути обчислену статистику
+      console.log('Education stats details:', educationStats);
+      console.log('Accuracy stats details:', accuracyStats);
+      console.log('Speed stats details:', speedStats);
 
       setStats({
         education: educationStats,

@@ -56,6 +56,15 @@ export function AccuracyMode({ setDef, onGameStateChange }: { setDef: QuizSet; o
   }, [isStarted, isFinished, timeLeft]);
 
   const finishGame = () => {
+    console.log('Finishing accuracy game:', {
+      correctAnswers,
+      totalAttempts,
+      errors,
+      currentWordIndex,
+      startTime,
+      endTime: performance.now()
+    });
+    
     setIsFinished(true);
     setEndTime(performance.now());
     if (intervalRef.current) {

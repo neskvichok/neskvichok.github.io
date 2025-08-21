@@ -53,6 +53,14 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
   }, [isStarted, isFinished, timeLeft]);
 
   const finishGame = () => {
+    console.log('Finishing speed game:', {
+      correctAnswers,
+      totalAttempts,
+      errors,
+      startTime,
+      endTime: performance.now()
+    });
+    
     setIsFinished(true);
     setEndTime(performance.now());
     if (intervalRef.current) {
