@@ -88,6 +88,9 @@ export default function ManageWordsPage() {
       await addWordsBulk(setId, items);
       setBulk("");
       await refresh();
+    } catch (error) {
+      console.error("Error adding words:", error);
+      setDuplicateWarning(`Помилка додавання: ${error instanceof Error ? error.message : 'Невідома помилка'}`);
     } finally {
       setAddingBulk(false);
     }

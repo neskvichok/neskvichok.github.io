@@ -52,15 +52,37 @@ export async function fetchSetWithWords(setId: string): Promise<QuizSet | null> 
 
 export async function addWordToSet(setId: string, hint: string, answers: string[]) {
   const supabase = createClient();
-  await supabase.from("words").insert({ set_id: setId, hint, answers });
+  const { data, error } = await supabase.from("words").insert({ 
+    set_id: setId, 
+    hint, 
+    answers: answers // Supabase автоматично конвертує string[] в jsonb
+  });
+  
+  if (error) {
+    console.error("Error adding word:", error);
+    throw error;
+  }
+  
+  return data;
 }
 
 export async function addWordsBulk(setId: string, items: Array<{ hint: string; answers: string[] }>) {
   if (!items.length) return;
   const supabase = createClient();
-  await supabase
+  const { data, error } = await supabase
     .from("words")
-    .insert(items.map(i => ({ set_id: setId, hint: i.hint, answers: i.answers })));
+    .insert(items.map(i => ({ 
+      set_id: setId, 
+      hint: i.hint, 
+      answers: i.answers // Supabase автоматично конвертує string[] в jsonb
+    })));
+  
+  if (error) {
+    console.error("Error adding words bulk:", error);
+    throw error;
+  }
+  
+  return data;
 }
 
 export async function deleteWord(wordId: string) {
@@ -85,7 +107,14 @@ export async function deleteSet(id: string) {
 
 export async function updateWord(wordId: string, payload: { hint?: string; answers?: string[] }) {
   const supabase = createClient();
-  await supabase.from("words").update(payload).eq("id", wordId);
+  const { data, error } = await supabase.from("words").update(payload).eq("id", wordId);
+  
+  if (error) {
+    console.error("Error updating word:", error);
+    throw error;
+  }
+  
+  return data;
 }
 
 
