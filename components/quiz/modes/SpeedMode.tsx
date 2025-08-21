@@ -53,29 +53,40 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
   }, [isStarted, isFinished, timeLeft]);
 
   const finishGame = () => {
+    const endTimeValue = performance.now();
     console.log('Finishing speed game:', {
       correctAnswers,
       totalAttempts,
       errors,
       startTime,
-      endTime: performance.now()
+      endTime: endTimeValue
     });
     
     setIsFinished(true);
-    setEndTime(performance.now());
+    setEndTime(endTimeValue);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
     onGameStateChange?.(false);
     // Зберегти результати
-    saveResults();
+    console.log('About to call saveResults...');
+    saveResults(endTimeValue);
   };
 
-  const saveResults = async () => {
-    if (!userId || !startTime || !endTime) return;
+  const saveResults = async (endTimeValue?: number) => {
+    const finalEndTime = endTimeValue || endTime;
+    console.log('saveResults called with:', { userId, startTime, endTime: finalEndTime });
+    if (!userId || !startTime || !finalEndTime) {
+      console.log('saveResults early return - missing data:', { 
+        hasUserId: !!userId, 
+        hasStartTime: !!startTime, 
+        hasEndTime: !!finalEndTime 
+      });
+      return;
+    }
     
     const accuracy = totalAttempts > 0 ? (correctAnswers / totalAttempts) * 100 : 0;
-    const timeSpent = (endTime - startTime) / 1000; // в секундах
+    const timeSpent = (finalEndTime - startTime) / 1000; // в секундах
     const wordsPerMinute = timeSpent > 0 ? (correctAnswers / timeSpent) * 60 : 0;
     
     // Для об'єднаних наборів зберігаємо результат для першого набору
