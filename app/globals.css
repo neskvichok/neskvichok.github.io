@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens mirrored from the original project */
+.container-nice { @apply max-w-5xl mx-auto px-4; }
+.card { @apply bg-white rounded-2xl shadow-soft border border-gray-100; }
+.btn { @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition; }
+.btn-primary { @apply bg-black text-white hover:bg-gray-800 active:scale-[0.98]; }
+.btn-ghost { @apply bg-transparent hover:bg-gray-100; }
+.select, .input { @apply w-full rounded-xl border border-gray-200 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-black/10; }
+.badge { @apply inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-700; }
+.progress { @apply h-3 w-full overflow-hidden rounded-full bg-gray-200; }
+.progress-bar { @apply h-full bg-black; }
+
+:root { color-scheme: light; }
+body { @apply bg-gray-50 text-gray-900 antialiased; }
+a { @apply underline-offset-2; }
