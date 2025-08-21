@@ -66,6 +66,13 @@ export default function AccountPage() {
         supabase.from('user_progress').select('*').eq('uid', userId)
       ]);
 
+      console.log('Raw data from DB:', {
+        accuracyResults: accuracyResults.data?.length || 0,
+        speedResults: speedResults.data?.length || 0,
+        userProgress: userProgress.data?.length || 0,
+        userProgressSample: userProgress.data?.slice(0, 3)
+      });
+
       // Обчислюємо статистику для режиму навчання
       const educationStats = calculateEducationStats(userProgress.data || []);
       
@@ -74,6 +81,12 @@ export default function AccountPage() {
       
       // Обчислюємо статистику для режиму швидкості
       const speedStats = calculateSpeedStats(speedResults.data || []);
+
+      console.log('Calculated stats:', {
+        education: educationStats,
+        accuracy: accuracyStats,
+        speed: speedStats
+      });
 
       setStats({
         education: educationStats,
@@ -88,13 +101,17 @@ export default function AccountPage() {
   };
 
   const calculateEducationStats = (progress: any[]): QuizStats => {
-    const totalWords = progress.length;
+    // Рахуємо тільки унікальні слова
+    const uniqueWords = new Set(progress.map(p => p.word_id));
+    const totalWords = uniqueWords.size;
+    
+    // Рахуємо тільки слова з short_memory > 15 як вивчені
     const learnedWords = progress.filter(p => p.short_memory > 15).length;
     const averageAccuracy = totalWords > 0 ? (learnedWords / totalWords) * 100 : 0;
     
     return {
       totalGames: 0, // Режим навчання не має окремих ігор
-      totalWords,
+      totalWords: learnedWords, // Показуємо тільки вивчені слова
       averageAccuracy: Math.round(averageAccuracy),
       bestSpeed: 0,
       bestAccuracy: Math.round(averageAccuracy),
@@ -203,7 +220,7 @@ export default function AccountPage() {
                 <div className="text-3xl font-bold text-blue-600 mt-2">
                   {stats.education.totalWords + stats.accuracy.totalWords + stats.speed.totalWords}
                 </div>
-                <p className="text-blue-700">Слів вивчено</p>
+                <p className="text-blue-700">Слів правильно в іграх</p>
               </div>
               <div className="text-4xl">📚</div>
             </div>
@@ -214,11 +231,13 @@ export default function AccountPage() {
               <div>
                 <h3 className="text-lg font-semibold text-green-800">Середня точність</h3>
                 <div className="text-3xl font-bold text-green-600 mt-2">
-                  {Math.round((
-                    stats.education.averageAccuracy + 
-                    stats.accuracy.averageAccuracy + 
-                    stats.speed.averageAccuracy
-                  ) / 3)}%
+                  {(() => {
+                    const modes = [stats.education, stats.accuracy, stats.speed];
+                    const activeModes = modes.filter(m => m.totalGames > 0 || m.totalWords > 0);
+                    if (activeModes.length === 0) return 0;
+                    const avg = activeModes.reduce((sum, m) => sum + m.averageAccuracy, 0) / activeModes.length;
+                    return Math.round(avg);
+                  })()}%
                 </div>
                 <p className="text-green-700">По всім режимам</p>
               </div>
