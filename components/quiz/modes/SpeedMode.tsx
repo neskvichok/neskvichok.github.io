@@ -139,6 +139,19 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
     setInput("");
   }
 
+  function skipWord() {
+    if (!current || !isStarted || isFinished) return;
+    
+    setTotalAttempts(prev => prev + 1);
+    setErrors(prev => prev + 1);
+    
+    // Отримати наступне слово
+    const nextWord = getNextWord();
+    setCurrent(nextWord);
+    
+    setInput("");
+  }
+
   function autoCheckAnswer(inputValue: string) {
     if (!current || !isStarted || isFinished) return;
     const normalizedInput = normalizeText(inputValue);
@@ -270,6 +283,9 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
               />
               <button className="btn btn-primary" onClick={checkAnswer}>
                 Перевірити
+              </button>
+              <button className="btn btn-outline" onClick={skipWord}>
+                Пропустити
               </button>
             </div>
           </>

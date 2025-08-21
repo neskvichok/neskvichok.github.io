@@ -16,6 +16,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [errors, setErrors] = useState(0);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [startTime, setStartTime] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -115,17 +116,40 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
     
     if (ok) {
       setCorrectAnswers(prev => prev + 1);
-      // Перейти до наступного слова
-      const nextIndex = currentWordIndex + 1;
-      if (nextIndex < words.length) {
-        setCurrentWordIndex(nextIndex);
-        setCurrent(words[nextIndex]);
-      } else {
-        // Всі слова завершені
+      // Позначити слово як завершене
+      setCompletedWords(prev => new Set([...prev, current.id]));
+      
+      // Перевірити чи всі слова завершені
+      if (completedWords.size + 1 >= words.length) {
         finishGame();
+      } else {
+        // Знайти наступне незавершене слово
+        const nextWord = words.find(w => !completedWords.has(w.id) && w.id !== current.id);
+        if (nextWord) {
+          setCurrent(nextWord);
+        } else {
+          finishGame();
+        }
       }
     } else {
       setErrors(prev => prev + 1);
+    }
+    
+    setInput("");
+  }
+
+  function skipWord() {
+    if (!current || !isStarted || isFinished) return;
+    
+    setTotalAttempts(prev => prev + 1);
+    setErrors(prev => prev + 1);
+    
+    // Знайти наступне незавершене слово
+    const nextWord = words.find(w => !completedWords.has(w.id) && w.id !== current.id);
+    if (nextWord) {
+      setCurrent(nextWord);
+    } else {
+      finishGame();
     }
     
     setInput("");
@@ -148,7 +172,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
   };
 
   const accuracy = totalAttempts > 0 ? (correctAnswers / totalAttempts) * 100 : 0;
-  const progress = (currentWordIndex / words.length) * 100;
+  const progress = (completedWords.size / words.length) * 100;
 
   if (!isStarted) {
     return (
@@ -217,7 +241,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
           <ProgressBar value={progress} />
         </div>
         <div className="text-sm text-gray-600">
-          {currentWordIndex + 1} / {words.length}
+          {completedWords.size} / {words.length}
         </div>
       </div>
 
@@ -257,6 +281,9 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
               />
               <button className="btn btn-primary" onClick={checkAnswer}>
                 Перевірити
+              </button>
+              <button className="btn btn-outline" onClick={skipWord}>
+                Пропустити
               </button>
             </div>
           </>
