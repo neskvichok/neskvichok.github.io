@@ -70,10 +70,11 @@ export default function AccountPage() {
     
     try {
       // Завантажуємо статистику для всіх режимів
-      const [accuracyResults, speedResults, userProgress] = await Promise.all([
+      const [accuracyResults, speedResults, userProgress, sets] = await Promise.all([
         supabase.from('accuracy_results').select('*').eq('uid', userId),
         supabase.from('speed_results').select('*').eq('uid', userId),
-        supabase.from('user_progress').select('*').eq('uid', userId)
+        supabase.from('user_progress').select('*').eq('uid', userId),
+        supabase.from('sets').select('id, name')
       ]);
 
       console.log('Raw data from DB:', {
@@ -103,7 +104,8 @@ export default function AccountPage() {
       const setsStats = calculateSetsStats(
         accuracyResults.data || [],
         speedResults.data || [],
-        userProgress.data || []
+        userProgress.data || [],
+        sets.data || []
       );
 
       console.log('Calculated stats:', {
@@ -118,6 +120,18 @@ export default function AccountPage() {
       console.log('Accuracy stats details:', accuracyStats);
       console.log('Speed stats details:', speedStats);
       console.log('Sets stats details:', setsStats);
+      
+      // Розгорнути детальну інформацію про кожен набір
+      setsStats.forEach((setStats, index) => {
+        console.log(`Set ${index + 1}:`, {
+          id: setStats.setId,
+          name: setStats.setName,
+          learnedWords: setStats.learnedWords,
+          totalWords: setStats.totalWords,
+          bestAccuracy: setStats.bestAccuracy,
+          bestSpeed: setStats.bestSpeed
+        });
+      });
 
       setStats({
         education: educationStats,
@@ -194,13 +208,16 @@ export default function AccountPage() {
     };
   };
 
-  const calculateSetsStats = (accuracyResults: any[], speedResults: any[], userProgress: any[]): SetStats[] => {
+  const calculateSetsStats = (accuracyResults: any[], speedResults: any[], userProgress: any[], sets: any[]): SetStats[] => {
     // Отримуємо унікальні набори
     const setIds = new Set([
       ...accuracyResults.map(r => r.set_id),
       ...speedResults.map(r => r.set_id),
       ...userProgress.map(p => p.set_id)
     ]);
+
+    // Створюємо мапу назв наборів
+    const setsMap = new Map(sets.map(s => [s.id, s.name]));
 
     return Array.from(setIds).map(setId => {
       // Найкращий результат в режимі точності для цього набору
@@ -222,7 +239,7 @@ export default function AccountPage() {
 
       return {
         setId,
-        setName: `Набір ${setId.slice(0, 8)}...`, // Тимчасова назва
+        setName: setsMap.get(setId) || `Набір ${setId.slice(0, 8)}...`,
         bestAccuracy: Math.round(bestAccuracy),
         bestSpeed: Math.round(bestSpeed),
         learnedWords,
