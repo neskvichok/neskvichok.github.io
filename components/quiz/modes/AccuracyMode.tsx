@@ -93,10 +93,18 @@ export function AccuracyMode({ setDef, onGameStateChange }: { setDef: QuizSet; o
     const accuracy = totalAttempts > 0 ? (correctAnswers / totalAttempts) * 100 : 0;
     const timeSpent = (finalEndTime - startTime) / 1000; // в секундах
     
-    // Для об'єднаних наборів зберігаємо результат для першого набору
-    const targetSetId = setDef.id.startsWith('combined-') 
-      ? setDef.id.replace('combined-', '').split('-')[0] 
-      : setDef.id;
+    // Для об'єднаних наборів зберігаємо результат для першого повного UUID
+    let targetSetId = setDef.id;
+    if (setDef.id.startsWith('combined-')) {
+      const setIds = setDef.id.replace('combined-', '').split('-');
+      const fullUuid = setIds.find(id => id.length >= 32);
+      if (fullUuid) {
+        targetSetId = fullUuid;
+      } else {
+        console.error('No valid UUID found in combined set ID:', setDef.id);
+        return;
+      }
+    }
     
     console.log('Saving accuracy results:', {
       userId,

@@ -89,10 +89,18 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
     const timeSpent = (finalEndTime - startTime) / 1000; // в секундах
     const wordsPerMinute = timeSpent > 0 ? (correctAnswers / timeSpent) * 60 : 0;
     
-    // Для об'єднаних наборів зберігаємо результат для першого набору
-    const targetSetId = setDef.id.startsWith('combined-') 
-      ? setDef.id.replace('combined-', '').split('-')[0] 
-      : setDef.id;
+    // Для об'єднаних наборів зберігаємо результат для першого повного UUID
+    let targetSetId = setDef.id;
+    if (setDef.id.startsWith('combined-')) {
+      const setIds = setDef.id.replace('combined-', '').split('-');
+      const fullUuid = setIds.find(id => id.length >= 32);
+      if (fullUuid) {
+        targetSetId = fullUuid;
+      } else {
+        console.error('No valid UUID found in combined set ID:', setDef.id);
+        return;
+      }
+    }
     
     console.log('Saving speed results:', {
       userId,
