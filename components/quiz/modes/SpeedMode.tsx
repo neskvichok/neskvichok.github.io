@@ -274,7 +274,7 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
         </div>
         <div className="flex-1">
           <div className="text-sm text-gray-600 mb-1">Прогрес</div>
-          <ProgressBar value={(correctAnswers / Math.max(correctAnswers + 1, 1)) * 100} />
+          <ProgressBar value={Math.min((correctAnswers / 50) * 100, 100)} />
         </div>
         <div className="text-sm text-gray-600">
           Слов: {correctAnswers}
@@ -284,7 +284,7 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
       {/* Статистика */}
       <div className="flex items-center gap-4 text-sm">
         <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-          Швидкість: {Math.round(wordsPerMinute)} сл/хв
+          Загальна швидкість: {Math.round(wordsPerMinute)} сл/хв
         </div>
         <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full">
           Правильно: {correctAnswers}
