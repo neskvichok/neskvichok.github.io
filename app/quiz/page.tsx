@@ -2,10 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Layout } from "@/components/quiz/Layout";
 import { ModePicker } from "@/components/quiz/ModePicker";
-import { SetPicker } from "@/components/quiz/SetPicker";
+import { MultiSetPicker } from "@/components/quiz/MultiSetPicker";
 import type { QuizSet } from "@/lib/quiz-data/types";
 import { EducationMode } from "@/components/quiz/modes/EducationMode";
 import { addWordToSet, deleteWord, fetchSetsWithWords } from "@/lib/quiz-data/db";
+import { combineSets } from "@/lib/quiz-data/combined-sets";
 
 const MODES = {
   education: { name: "Education", component: EducationMode, status: "ready" },
@@ -13,9 +14,9 @@ const MODES = {
 
 export default function QuizHomePage() {
   const [sets, setSets] = useState<QuizSet[]>([]);
-  const [selectedSetId, setSelectedSetId] = useState<string | undefined>(undefined);
+  const [selectedSetIds, setSelectedSetIds] = useState<string[]>([]);
   const [selectedMode, setSelectedMode] = useState<keyof typeof MODES>("education");
-  const selectedSet = sets.find((s) => s.id === selectedSetId);
+  const selectedSet = useMemo(() => combineSets(sets, selectedSetIds), [sets, selectedSetIds]);
   const SelectedModeComponent = MODES[selectedMode].component;
 
   useEffect(() => {
@@ -23,17 +24,21 @@ export default function QuizHomePage() {
       const fromDb = await fetchSetsWithWords();
       if (fromDb.length) {
         setSets(fromDb);
-        setSelectedSetId(fromDb[0]?.id);
+        setSelectedSetIds([fromDb[0]?.id].filter(Boolean) as string[]);
       }
     })();
   }, []);
 
   async function handleAddWord() {
+    if (selectedSetIds.length !== 1) {
+      alert("Для додавання слова виберіть тільки один набір");
+      return;
+    }
     const hint = prompt("Підказка слова (hint)")?.trim();
     if (!hint) return;
     const ans = prompt("Відповіді через кому")?.trim();
     if (!ans) return;
-    await addWordToSet(selectedSetId!, hint, ans.split(",").map(s => s.trim()).filter(Boolean));
+    await addWordToSet(selectedSetIds[0], hint, ans.split(",").map(s => s.trim()).filter(Boolean));
     const fromDb = await fetchSetsWithWords();
     setSets(fromDb);
   }
@@ -51,8 +56,7 @@ export default function QuizHomePage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Quiz Trainer</h1>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full md:w-auto">
-          <SetPicker sets={sets} value={selectedSetId} onChange={setSelectedSetId} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full md:w-auto">
           <ModePicker modes={MODES} value={selectedMode} onChange={(v) => setSelectedMode(v as any)} />
           <a className="btn btn-ghost" href="/quiz/manage">Керувати наборами</a>
         </div>
@@ -60,10 +64,18 @@ export default function QuizHomePage() {
 
       <main className="container-nice mt-6">
         <div className="card p-4 md:p-6">
+          <div className="mb-6">
+            <MultiSetPicker 
+              sets={sets} 
+              selectedSetIds={selectedSetIds} 
+              onChange={setSelectedSetIds} 
+            />
+          </div>
+          
           {selectedSet ? (
             <SelectedModeComponent setDef={selectedSet} />
           ) : (
-            <div className="text-gray-700">Немає вибраного набору. Створіть або оберіть набір.</div>
+            <div className="text-gray-700">Виберіть хоча б один набір для початку квізу.</div>
           )}
         </div>
       </main>

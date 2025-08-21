@@ -83,8 +83,8 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
       });
     }
 
-    // Оновити історію (відкласти поточне слово мінімум на 5 наступних)
-    const newHistory = current ? [...askedHistoryIds, current.id].slice(-5) : askedHistoryIds;
+    // Оновити історію (відкласти поточне слово мінімум на 3 наступних)
+    const newHistory = current ? [...askedHistoryIds, current.id].slice(-3) : askedHistoryIds;
     setAskedHistoryIds(newHistory);
 
     // Зменшити лічильник для всіх feedback слів
@@ -96,7 +96,11 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
       
       // Оновити заблоковані слова - видалити ті, що досягли лічильника 0
       const remainingIds = updated.map(word => word.id);
-      setBlockedWords(prevBlocked => prevBlocked.filter(id => remainingIds.includes(id)));
+      setBlockedWords(prevBlocked => {
+        const newBlocked = prevBlocked.filter(id => remainingIds.includes(id));
+        console.log("Feedback words:", updated.length, "Blocked words:", newBlocked.length);
+        return newBlocked;
+      });
       
       return updated;
     });
@@ -133,20 +137,27 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
     // Якщо не показуємо вивчене або немає вивчених, показуємо невивчені
     if (pool.length === 0) {
       pool = nextWords.filter(w => !isLearned(w) && !newHistory.includes(w.id) && !blockedWords.includes(w.id));
+      console.log("Available unlearned words:", pool.length, "from", nextWords.length);
+      console.log("History:", newHistory.length, "Blocked:", blockedWords.length);
+      
       if (pool.length === 0) {
         // Якщо вибору немає, дозволимо з історії (щоб не зациклитись)
         pool = nextWords.filter(w => !isLearned(w) && !blockedWords.includes(w.id));
+        console.log("Using words from history:", pool.length);
       }
       if (pool.length === 0) {
         // Якщо все ще немає вибору, дозволимо все крім вивчених
         pool = nextWords.filter(w => !isLearned(w));
+        console.log("Using all unlearned words:", pool.length);
       }
       // Якщо всі слова в feedback, дозволимо їх
       if (pool.length === 0 && feedbackWords.length > 0) {
         pool = nextWords.filter(w => !isLearned(w));
+        console.log("Using words despite feedback:", pool.length);
       }
     }
     
+    console.log("Final pool size:", pool.length, "Selected word:", pool[0]?.hint);
     setCurrent(pool.length ? pool[0] : null);
   }
 
@@ -235,11 +246,17 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
                   Всі вивчені!
                 </div>
               )}
+              <div className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                Прогрес: {wordCounter}/∞
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-2xl md:text-3xl font-semibold">{current.hint}</div>
               <div className="text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                 {current.shortMemory ?? 0}/15
+              </div>
+              <div className="text-xs text-gray-500">
+                Доступно: {words.filter(w => !isLearned(w) && !askedHistoryIds.includes(w.id) && !blockedWords.includes(w.id)).length}
               </div>
             </div>
 

@@ -8,9 +8,31 @@ export function isLearned(word: QuizWord): boolean {
 
 export function selectNextWord(words: QuizWord[]): QuizWord | null {
   if (!words.length) return null;
-  const min = Math.min(...words.map(w => w.shortMemory ?? 0));
-  const candidates = words.filter(w => (w.shortMemory ?? 0) === min);
-  return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+  
+  // Розподілити ваги на основі shortMemory (менший shortMemory = більша вага)
+  const weights = words.map(w => {
+    const shortMemory = w.shortMemory ?? 0;
+    // Вага обернено пропорційна shortMemory (слово з 0 має найбільшу вагу)
+    return Math.max(1, 20 - shortMemory);
+  });
+  
+  // Загальна вага
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  
+  // Випадкове число
+  const random = Math.random() * totalWeight;
+  
+  // Знайти слово на основі ваги
+  let currentWeight = 0;
+  for (let i = 0; i < words.length; i++) {
+    currentWeight += weights[i];
+    if (random <= currentWeight) {
+      return words[i];
+    }
+  }
+  
+  // Fallback
+  return words[0];
 }
 
 export function calcProgress(words: QuizWord[]): number {
