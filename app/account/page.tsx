@@ -10,8 +10,8 @@ import { withBasePath } from "@/lib/utils";
 interface SetStats {
   setId: string;
   setName: string;
-  bestAccuracy: number;
-  bestSpeed: number;
+  bestAccuracy: string;
+  bestSpeed: string;
   learnedWords: number;
   totalWords: number;
 }
@@ -222,15 +222,34 @@ export default function AccountPage() {
     return Array.from(setIds).map(setId => {
       // Найкращий результат в режимі точності для цього набору
       const setAccuracyResults = accuracyResults.filter(r => r.set_id === setId);
-      const bestAccuracy = setAccuracyResults.length > 0 
-        ? Math.max(...setAccuracyResults.map(r => r.accuracy || 0))
-        : 0;
+      let bestAccuracyDisplay = 'Немає';
+      if (setAccuracyResults.length > 0) {
+        const bestResult = setAccuracyResults.reduce((best, current) => 
+          (current.correct_answers || 0) > (best.correct_answers || 0) ? current : best
+        );
+        const correctWords = bestResult.correct_answers || 0;
+        if (correctWords === 20) {
+          // Якщо всі 20 слів правильно - показуємо час
+          const timeSpent = bestResult.time_spent || 0;
+          const minutes = Math.floor(timeSpent / 60);
+          const seconds = Math.floor(timeSpent % 60);
+          bestAccuracyDisplay = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+          // Інакше показуємо кількість слів
+          bestAccuracyDisplay = `${correctWords} слів`;
+        }
+      }
 
       // Найкращий результат в режимі швидкості для цього набору
       const setSpeedResults = speedResults.filter(r => r.set_id === setId);
-      const bestSpeed = setSpeedResults.length > 0
-        ? Math.max(...setSpeedResults.map(r => r.words_per_minute || 0))
-        : 0;
+      let bestSpeedDisplay = 'Немає';
+      if (setSpeedResults.length > 0) {
+        const bestResult = setSpeedResults.reduce((best, current) => 
+          (current.correct_answers || 0) > (best.correct_answers || 0) ? current : best
+        );
+        const correctWords = bestResult.correct_answers || 0;
+        bestSpeedDisplay = `${correctWords} слів`;
+      }
 
       // Статистика навчання для цього набору
       const setProgress = userProgress.filter(p => p.set_id === setId);
@@ -240,8 +259,8 @@ export default function AccountPage() {
       return {
         setId,
         setName: setsMap.get(setId) || `Набір ${setId.slice(0, 8)}...`,
-        bestAccuracy: Math.round(bestAccuracy),
-        bestSpeed: Math.round(bestSpeed),
+        bestAccuracy: bestAccuracyDisplay,
+        bestSpeed: bestSpeedDisplay,
         learnedWords,
         totalWords: uniqueWords.size
       };
@@ -371,21 +390,21 @@ export default function AccountPage() {
                       </span>
                     </div>
                     
-                    {/* Точність */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Найкраща точність:</span>
-                      <span className="font-semibold text-blue-600">
-                        {setStats.bestAccuracy > 0 ? `${setStats.bestAccuracy}%` : 'Немає'}
-                      </span>
-                    </div>
-                    
-                    {/* Швидкість */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Найкраща швидкість:</span>
-                      <span className="font-semibold text-red-600">
-                        {setStats.bestSpeed > 0 ? `${setStats.bestSpeed} сл/хв` : 'Немає'}
-                      </span>
-                    </div>
+                                       {/* Точність */}
+                   <div className="flex justify-between items-center">
+                     <span className="text-gray-600">Найкраща точність:</span>
+                     <span className="font-semibold text-blue-600">
+                       {setStats.bestAccuracy !== 'Немає' ? setStats.bestAccuracy : 'Немає'}
+                     </span>
+                   </div>
+                   
+                   {/* Швидкість */}
+                   <div className="flex justify-between items-center">
+                     <span className="text-gray-600">Найкраща швидкість:</span>
+                     <span className="font-semibold text-red-600">
+                       {setStats.bestSpeed !== 'Немає' ? setStats.bestSpeed : 'Немає'}
+                     </span>
+                   </div>
                     
                     {/* Прогрес-бар навчання */}
                     <div className="w-full bg-gray-200 rounded-full h-2">
