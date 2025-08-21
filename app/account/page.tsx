@@ -7,6 +7,15 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { withBasePath } from "@/lib/utils";
 
+interface SetStats {
+  setId: string;
+  setName: string;
+  bestAccuracy: number;
+  bestSpeed: number;
+  learnedWords: number;
+  totalWords: number;
+}
+
 interface QuizStats {
   totalGames: number;
   totalWords: number;
@@ -20,6 +29,7 @@ interface ModeStats {
   education: QuizStats;
   accuracy: QuizStats;
   speed: QuizStats;
+  sets: SetStats[];
 }
 
 export default function AccountPage() {
@@ -89,21 +99,31 @@ export default function AccountPage() {
       // Обчислюємо статистику для режиму швидкості
       const speedStats = calculateSpeedStats(speedResults.data || []);
 
+      // Обчислюємо статистику по наборах
+      const setsStats = calculateSetsStats(
+        accuracyResults.data || [],
+        speedResults.data || [],
+        userProgress.data || []
+      );
+
       console.log('Calculated stats:', {
         education: educationStats,
         accuracy: accuracyStats,
-        speed: speedStats
+        speed: speedStats,
+        sets: setsStats
       });
       
       // Розгорнути обчислену статистику
       console.log('Education stats details:', educationStats);
       console.log('Accuracy stats details:', accuracyStats);
       console.log('Speed stats details:', speedStats);
+      console.log('Sets stats details:', setsStats);
 
       setStats({
         education: educationStats,
         accuracy: accuracyStats,
-        speed: speedStats
+        speed: speedStats,
+        sets: setsStats
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -172,6 +192,43 @@ export default function AccountPage() {
       bestAccuracy: Math.round(bestAccuracy),
       totalTime
     };
+  };
+
+  const calculateSetsStats = (accuracyResults: any[], speedResults: any[], userProgress: any[]): SetStats[] => {
+    // Отримуємо унікальні набори
+    const setIds = new Set([
+      ...accuracyResults.map(r => r.set_id),
+      ...speedResults.map(r => r.set_id),
+      ...userProgress.map(p => p.set_id)
+    ]);
+
+    return Array.from(setIds).map(setId => {
+      // Найкращий результат в режимі точності для цього набору
+      const setAccuracyResults = accuracyResults.filter(r => r.set_id === setId);
+      const bestAccuracy = setAccuracyResults.length > 0 
+        ? Math.max(...setAccuracyResults.map(r => r.accuracy || 0))
+        : 0;
+
+      // Найкращий результат в режимі швидкості для цього набору
+      const setSpeedResults = speedResults.filter(r => r.set_id === setId);
+      const bestSpeed = setSpeedResults.length > 0
+        ? Math.max(...setSpeedResults.map(r => r.words_per_minute || 0))
+        : 0;
+
+      // Статистика навчання для цього набору
+      const setProgress = userProgress.filter(p => p.set_id === setId);
+      const uniqueWords = new Set(setProgress.map(p => p.word_id));
+      const learnedWords = setProgress.filter(p => p.short_memory > 15).length;
+
+      return {
+        setId,
+        setName: `Набір ${setId.slice(0, 8)}...`, // Тимчасова назва
+        bestAccuracy: Math.round(bestAccuracy),
+        bestSpeed: Math.round(bestSpeed),
+        learnedWords,
+        totalWords: uniqueWords.size
+      };
+    });
   };
 
   const formatTime = (seconds: number) => {
@@ -272,101 +329,70 @@ export default function AccountPage() {
         </div>
       )}
 
-      {/* Статистика по режимам */}
+      {/* Статистика по наборах */}
       {statsLoading ? (
         <div className="card p-6">
           <div className="text-center">Завантаження статистики...</div>
         </div>
-      ) : stats ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Режим навчання */}
-          <div className="card p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="text-2xl">📖</div>
-              <h3 className="text-xl font-semibold">Режим «Навчання»</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Вивчено слів:</span>
-                <span className="font-semibold">{stats.education.totalWords}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Точність:</span>
-                <span className="font-semibold text-green-600">{stats.education.averageAccuracy}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${stats.education.averageAccuracy}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Режим точності */}
-          <div className="card p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="text-2xl">🎯</div>
-              <h3 className="text-xl font-semibold">Режим «Точність»</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Ігор зіграно:</span>
-                <span className="font-semibold">{stats.accuracy.totalGames}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Слів правильно:</span>
-                <span className="font-semibold">{stats.accuracy.totalWords}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Середня точність:</span>
-                <span className="font-semibold text-blue-600">{stats.accuracy.averageAccuracy}%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Найкраща точність:</span>
-                <span className="font-semibold text-green-600">{stats.accuracy.bestAccuracy}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${stats.accuracy.averageAccuracy}%` }}
-                ></div>
-              </div>
+            ) : stats ? (
+        stats.sets.length > 0 ? (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-800">Статистика по наборах</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {stats.sets.map((setStats) => (
+                <div key={setStats.setId} className="card p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-2xl">📚</div>
+                    <h3 className="text-lg font-semibold">{setStats.setName}</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {/* Навчання */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Вивчено слів:</span>
+                      <span className="font-semibold text-green-600">
+                        {setStats.learnedWords}/{setStats.totalWords}
+                      </span>
+                    </div>
+                    
+                    {/* Точність */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Найкраща точність:</span>
+                      <span className="font-semibold text-blue-600">
+                        {setStats.bestAccuracy > 0 ? `${setStats.bestAccuracy}%` : 'Немає'}
+                      </span>
+                    </div>
+                    
+                    {/* Швидкість */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Найкраща швидкість:</span>
+                      <span className="font-semibold text-red-600">
+                        {setStats.bestSpeed > 0 ? `${setStats.bestSpeed} сл/хв` : 'Немає'}
+                      </span>
+                    </div>
+                    
+                    {/* Прогрес-бар навчання */}
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${setStats.totalWords > 0 ? (setStats.learnedWords / setStats.totalWords) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          {/* Режим швидкості */}
+        ) : (
           <div className="card p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="text-2xl">⚡</div>
-              <h3 className="text-xl font-semibold">Режим «Швидкість»</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Ігор зіграно:</span>
-                <span className="font-semibold">{stats.speed.totalGames}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Слів правильно:</span>
-                <span className="font-semibold">{stats.speed.totalWords}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Середня точність:</span>
-                <span className="font-semibold text-orange-600">{stats.speed.averageAccuracy}%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Найкраща швидкість:</span>
-                <span className="font-semibold text-red-600">{stats.speed.bestSpeed} сл/хв</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-orange-500 h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${stats.speed.averageAccuracy}%` }}
-                ></div>
-              </div>
+            <div className="text-center text-gray-600">
+              <div className="text-4xl mb-4">📊</div>
+              <p>Почніть грати, щоб побачити статистику по наборах!</p>
+              <Link className="btn btn-primary mt-4" href={withBasePath("/quiz")}>
+                Перейти до квізів
+              </Link>
             </div>
           </div>
-        </div>
+        )
       ) : (
         <div className="card p-6">
           <div className="text-center text-gray-600">
