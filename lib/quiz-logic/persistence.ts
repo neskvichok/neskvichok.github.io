@@ -15,6 +15,11 @@ export async function getSetProgress(userId: string | undefined | null, setId: s
     const map: ProgressMap = {};
     
     for (const individualSetId of setIds) {
+      // Пропускаємо короткі UUID (менше 32 символів)
+      if (individualSetId.length < 32) {
+        continue;
+      }
+      
       const supabase = createClient();
       const { data, error } = await supabase
         .from("user_progress")
@@ -56,12 +61,27 @@ export async function saveWordProgress(userId: string | undefined | null, setId:
     try { localStorage.setItem(key, JSON.stringify(cur)); } catch {}
     return;
   }
+  
+  // Для об'єднаних наборів зберігаємо в перший набір
+  let targetSetId = setId;
+  if (setId.startsWith("combined-")) {
+    const setIds = setId.replace("combined-", "").split("-");
+    // Знаходимо перший повний UUID
+    const fullUuid = setIds.find(id => id.length >= 32);
+    if (fullUuid) {
+      targetSetId = fullUuid;
+    } else {
+      // Якщо немає повного UUID, не зберігаємо
+      return;
+    }
+  }
+  
   const supabase = createClient();
   const { error } = await supabase
     .from("user_progress")
     .upsert({
       uid: userId,
-      set_id: setId,
+      set_id: targetSetId,
       word_id: wordId,
       short_memory: payload.shortMemory ?? 0,
     }, { onConflict: "uid,word_id" });

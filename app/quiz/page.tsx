@@ -20,7 +20,8 @@ export default function QuizHomePage() {
   const [sets, setSets] = useState<QuizSet[]>([]);
   const [selectedSetIds, setSelectedSetIds] = useState<string[]>([]);
   const [selectedMode, setSelectedMode] = useState<keyof typeof MODES>("education");
-
+  const [isGameActive, setIsGameActive] = useState(false);
+ 
   const selectedSet = useMemo(() => combineSets(sets, selectedSetIds), [sets, selectedSetIds]);
   const SelectedModeComponent = MODES[selectedMode].component;
 
@@ -69,7 +70,10 @@ export default function QuizHomePage() {
           <div className="flex-1">
             <div className="card p-4 md:p-6">
               {selectedSet ? (
-                <SelectedModeComponent setDef={selectedSet} />
+                <SelectedModeComponent 
+                  setDef={selectedSet} 
+                  onGameStateChange={selectedMode === "accuracy" || selectedMode === "speed" ? setIsGameActive : undefined}
+                />
               ) : (
                 <div className="text-gray-700">Виберіть хоча б один набір для початку квізу.</div>
               )}
@@ -77,7 +81,7 @@ export default function QuizHomePage() {
           </div>
           
           {/* Бічна панель з наборами */}
-          {selectedMode === "education" && (
+          {!isGameActive && (
             <div className="lg:w-80">
               <div className="card p-4 mb-4">
                 <ModePicker modes={MODES} value={selectedMode} onChange={(v) => setSelectedMode(v as any)} />

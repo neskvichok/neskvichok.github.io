@@ -4,7 +4,7 @@ import type { QuizSet, QuizWord } from "@/lib/quiz-data/types";
 import { ProgressBar } from "@/components/quiz/ProgressBar";
 import { createClient } from "@/lib/supabase-client";
 
-export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
+export function AccuracyMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGameStateChange?: (isActive: boolean) => void }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [words, setWords] = useState<QuizWord[]>([]);
   const [current, setCurrent] = useState<QuizWord | null>(null);
@@ -61,6 +61,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
+    onGameStateChange?.(false);
     // Зберегти результати
     saveResults();
   };
@@ -93,6 +94,7 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
   const startGame = () => {
     setIsStarted(true);
     setStartTime(performance.now());
+    onGameStateChange?.(true);
   };
 
   const acceptableAnswers = useMemo(() => {
@@ -292,7 +294,23 @@ export function AccuracyMode({ setDef }: { setDef: QuizSet }) {
           </div>
           <button 
             className="btn btn-primary"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              // Скинути стан гри
+              setIsStarted(false);
+              setIsFinished(false);
+              setTimeLeft(4 * 60);
+              setCorrectAnswers(0);
+              setTotalAttempts(0);
+              setErrors(0);
+              setSkippedWords(0);
+              setCurrentWordIndex(0);
+              setCompletedWords(new Set());
+              setStartTime(null);
+              setEndTime(null);
+              setInput("");
+              // Перезапустити гру
+              startGame();
+            }}
           >
             Спробувати ще раз
           </button>

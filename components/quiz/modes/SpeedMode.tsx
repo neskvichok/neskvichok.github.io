@@ -4,7 +4,7 @@ import type { QuizSet, QuizWord } from "@/lib/quiz-data/types";
 import { ProgressBar } from "@/components/quiz/ProgressBar";
 import { createClient } from "@/lib/supabase-client";
 
-export function SpeedMode({ setDef }: { setDef: QuizSet }) {
+export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGameStateChange?: (isActive: boolean) => void }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [wordQueue, setWordQueue] = useState<QuizWord[]>([]);
   const [current, setCurrent] = useState<QuizWord | null>(null);
@@ -58,6 +58,7 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
+    onGameStateChange?.(false);
     // Зберегти результати
     saveResults();
   };
@@ -91,6 +92,7 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
   const startGame = () => {
     setIsStarted(true);
     setStartTime(performance.now());
+    onGameStateChange?.(true);
   };
 
   const getNextWord = () => {
@@ -240,7 +242,21 @@ export function SpeedMode({ setDef }: { setDef: QuizSet }) {
           </div>
           <button 
             className="btn btn-primary"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              // Скинути стан гри
+              setIsStarted(false);
+              setIsFinished(false);
+              setTimeLeft(4 * 60);
+              setCorrectAnswers(0);
+              setTotalAttempts(0);
+              setErrors(0);
+              setSkippedWords(0);
+              setStartTime(null);
+              setEndTime(null);
+              setInput("");
+              // Перезапустити гру
+              startGame();
+            }}
           >
             Спробувати ще раз
           </button>
