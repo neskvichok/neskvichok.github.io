@@ -63,20 +63,29 @@ export default function QuizHomePage() {
       </header>
 
       <main className="container-nice mt-6">
-        <div className="card p-4 md:p-6">
-          <div className="mb-6">
-            <MultiSetPicker 
-              sets={sets} 
-              selectedSetIds={selectedSetIds} 
-              onChange={setSelectedSetIds} 
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Основний контент квізу */}
+          <div className="lg:col-span-3">
+            <div className="card p-4 md:p-6">
+              {selectedSet ? (
+                <SelectedModeComponent setDef={selectedSet} />
+              ) : (
+                <div className="text-gray-700">Виберіть хоча б один набір для початку квізу.</div>
+              )}
+            </div>
           </div>
           
-          {selectedSet ? (
-            <SelectedModeComponent setDef={selectedSet} />
-          ) : (
-            <div className="text-gray-700">Виберіть хоча б один набір для початку квізу.</div>
-          )}
+          {/* Бічна панель з наборами */}
+          <div className="lg:col-span-1">
+            <div className="card p-4">
+              <h3 className="text-lg font-semibold mb-4">Набори слів</h3>
+              <MultiSetPicker 
+                sets={sets} 
+                selectedSetIds={selectedSetIds} 
+                onChange={setSelectedSetIds} 
+              />
+            </div>
+          </div>
         </div>
       </main>
     </Layout>

@@ -9,30 +9,30 @@ export function isLearned(word: QuizWord): boolean {
 export function selectNextWord(words: QuizWord[]): QuizWord | null {
   if (!words.length) return null;
   
-  // Розподілити ваги на основі shortMemory (менший shortMemory = більша вага)
-  const weights = words.map(w => {
-    const shortMemory = w.shortMemory ?? 0;
-    // Вага обернено пропорційна shortMemory (слово з 0 має найбільшу вагу)
-    return Math.max(1, 20 - shortMemory);
-  });
+  // Знайти найменше значення shortMemory
+  const minShortMemory = Math.min(...words.map(w => w.shortMemory ?? 0));
   
-  // Загальна вага
-  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  // Знайти слова з найменшим shortMemory
+  const candidates = words.filter(w => (w.shortMemory ?? 0) === minShortMemory);
   
-  // Випадкове число
-  const random = Math.random() * totalWeight;
-  
-  // Знайти слово на основі ваги
-  let currentWeight = 0;
-  for (let i = 0; i < words.length; i++) {
-    currentWeight += weights[i];
-    if (random <= currentWeight) {
-      return words[i];
-    }
+  // Якщо є тільки одне слово з найменшим shortMemory, повернути його
+  if (candidates.length === 1) {
+    return candidates[0];
   }
   
-  // Fallback
-  return words[0];
+  // Якщо є кілька слів з найменшим shortMemory, вибрати випадково серед них
+  // Але також включити слова з другим найменшим значенням (якщо воно не набагато більше)
+  const secondMinShortMemory = Math.min(...words
+    .filter(w => (w.shortMemory ?? 0) > minShortMemory)
+    .map(w => w.shortMemory ?? 0));
+  
+  // Якщо різниця між найменшим і другим найменшим невелика (≤ 2), включити обидва
+  const finalCandidates = secondMinShortMemory - minShortMemory <= 2
+    ? words.filter(w => (w.shortMemory ?? 0) <= secondMinShortMemory)
+    : candidates;
+  
+  // Випадково вибрати з фінальних кандидатів
+  return finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
 }
 
 export function calcProgress(words: QuizWord[]): number {

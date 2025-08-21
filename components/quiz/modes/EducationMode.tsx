@@ -139,6 +139,8 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
       pool = nextWords.filter(w => !isLearned(w) && !newHistory.includes(w.id) && !blockedWords.includes(w.id));
       console.log("Available unlearned words:", pool.length, "from", nextWords.length);
       console.log("History:", newHistory.length, "Blocked:", blockedWords.length);
+      console.log("History IDs:", newHistory);
+      console.log("Blocked IDs:", blockedWords);
       
       if (pool.length === 0) {
         // Якщо вибору немає, дозволимо з історії (щоб не зациклитись)
@@ -158,7 +160,19 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
     }
     
     console.log("Final pool size:", pool.length, "Selected word:", pool[0]?.hint);
-    setCurrent(pool.length ? pool[0] : null);
+    console.log("Available words:", pool.map(w => w.hint).join(', '));
+    console.log("All words shortMemory:", nextWords.map(w => `${w.hint}:${w.shortMemory}`).join(', '));
+    
+    // Додаткове логування для selectNextWord
+    if (pool.length > 0) {
+      const minShortMemory = Math.min(...pool.map(w => w.shortMemory ?? 0));
+      const candidates = pool.filter(w => (w.shortMemory ?? 0) === minShortMemory);
+      console.log(`Min shortMemory: ${minShortMemory}, Candidates: ${candidates.length}`);
+    }
+    
+    // Змішати pool перед вибором для більшої випадковості
+    const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
+    setCurrent(shuffledPool.length ? shuffledPool[0] : null);
   }
 
   // Функція для нормалізації тексту (видаляє пробіли, приводить до нижнього регістру)
@@ -246,9 +260,6 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
                   Всі вивчені!
                 </div>
               )}
-              <div className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                Прогрес: {wordCounter}/∞
-              </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-2xl md:text-3xl font-semibold">{current.hint}</div>
