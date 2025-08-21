@@ -49,31 +49,50 @@ export default function ManageWordsPage() {
   function parseLine(input: string): { hint: string; answers: string[] } | null {
     const raw = input.trim();
     if (!raw) return null;
-    const [h, rest] = raw.split("-");
-    const hint = (h || "").trim();
-    const answers = (rest || "")
+    
+    // Підтримуємо різні типи дефісів: -, –, —
+    const parts = raw.split(/[-–—]/);
+    if (parts.length < 2) return null;
+    
+    const hint = parts[0].trim();
+    const rest = parts.slice(1).join("-").trim(); // З'єднуємо решту частин на випадок, якщо в hint є дефіси
+    
+    const answers = rest
       .split(",")
       .map(s => s.trim())
       .filter(Boolean);
+    
     if (!hint || answers.length === 0) return null;
     return { hint, answers };
   }
 
   function parseBulk(input: string): Array<{ hint: string; answers: string[] }> {
+    console.log("parseBulk input:", input);
     const lines = input.split(/\r?\n/);
+    console.log("Lines:", lines);
     const items: Array<{ hint: string; answers: string[] }> = [];
     for (const l of lines) {
       const parsed = parseLine(l);
+      console.log("Parsed line:", l, "->", parsed);
       if (parsed) items.push(parsed);
     }
+    console.log("Final items:", items);
     return items;
   }
 
   async function onAddBulkSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!setId) return;
+    console.log("onAddBulkSubmit called");
+    if (!setId) {
+      console.log("No setId");
+      return;
+    }
     const items = parseBulk(bulk);
-    if (!items.length) return;
+    console.log("Parsed items:", items);
+    if (!items.length) {
+      console.log("No items to add");
+      return;
+    }
     // Перевірка на дублікати
     const existingHints = setDef?.words.map(w => w.hint.toLowerCase()) || [];
     const newHints = items.map(i => i.hint.toLowerCase());
@@ -85,6 +104,7 @@ export default function ManageWordsPage() {
     setDuplicateWarning(null);
     setAddingBulk(true);
     try {
+      console.log("Calling addWordsBulk with:", { setId, items });
       await addWordsBulk(setId, items);
       setBulk("");
       await refresh();
@@ -168,7 +188,7 @@ export default function ManageWordsPage() {
               )}
               <textarea
                 className="input min-h-[120px]"
-                placeholder={"Кілька рядків у форматі:\ncat - кіт, котик\nto run - бігти, бігати"}
+                placeholder={"Кілька рядків у форматі:\ncat - кіт, котик\nto run - бігти, бігати\nel retraso – запізнення"}
                 value={bulk}
                 onChange={(e) => setBulk(e.target.value)}
               />

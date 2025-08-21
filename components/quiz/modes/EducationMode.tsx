@@ -150,10 +150,18 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
     setCurrent(pool.length ? pool[0] : null);
   }
 
+  // Функція для нормалізації тексту (видаляє пробіли, приводить до нижнього регістру)
+  function normalizeText(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/\s+/g, '') // Видаляє всі пробіли, табуляції, переноси рядків
+      .replace(/[^\wа-яіїєґ]/g, ''); // Видаляє всі символи крім букв і цифр
+  }
+
   function checkAnswer() {
     if (!current) return;
-    const ans = input.trim().toLowerCase();
-    const ok = acceptableAnswers.some(a => a.trim().toLowerCase() === ans);
+    const normalizedInput = normalizeText(input);
+    const ok = acceptableAnswers.some(a => normalizeText(a) === normalizedInput);
     
     if (!ok) {
       // Додати або оновити слово в feedback
