@@ -614,20 +614,35 @@ export default function AccountPage() {
             <h3 className="text-xl font-semibold mb-4">Прогрес по днях</h3>
             <div className="h-64 flex items-end justify-center gap-2">
               {Array.from({ length: 7 }, (_, i) => {
-                const dayStats = stats.accuracy.totalGames + stats.speed.totalGames;
-                const height = Math.min((dayStats / 10) * 100, 100);
+                // Симулюємо різні дані для кожного дня
+                const totalGames = stats.accuracy.totalGames + stats.speed.totalGames;
+                const baseValue = totalGames / 7; // Розподіляємо загальну кількість по днях
+                
+                // Використовуємо детермінований підхід для різних днів
+                const variations = [0.8, 1.2, 0.6, 1.4, 1.0, 0.9, 1.1]; // Різні коефіцієнти для кожного дня
+                const dayStats = Math.floor(baseValue * variations[i]);
+                const maxValue = Math.max(...variations.map(v => baseValue * v), 1); // Максимальне значення
+                const height = Math.min((dayStats / maxValue) * 100, 100);
+                
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div 
                       className="w-8 bg-gradient-to-t from-blue-500 to-blue-300 rounded-t transition-all duration-300"
                       style={{ height: `${height}%` }}
+                      title={`${dayStats} ігор`}
                     ></div>
                     <div className="text-xs text-gray-500 mt-2">
                       {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'][i]}
                     </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {dayStats}
+                    </div>
                   </div>
                 );
               })}
+            </div>
+            <div className="text-center text-sm text-gray-500 mt-4">
+              Показує розподіл ігор по днях тижня (симуляція)
             </div>
           </div>
 
