@@ -368,14 +368,14 @@ export default function AccountPage() {
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+    const secs = Math.round((seconds % 60) * 100) / 100; // Округлюємо до 2 знаків після коми
     
     if (hours > 0) {
       return `${hours}г ${minutes}хв`;
     } else if (minutes > 0) {
-      return `${minutes}хв ${secs}с`;
+      return `${minutes}хв ${secs.toFixed(2)}с`;
     } else {
-      return `${secs}с`;
+      return `${secs.toFixed(2)}с`;
     }
   };
 
