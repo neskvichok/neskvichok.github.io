@@ -168,9 +168,9 @@ export default function AccountPage() {
     return {
       totalGames: 0, // Режим навчання не має окремих ігор
       totalWords: learnedWords, // Показуємо тільки вивчені слова
-      averageAccuracy: Math.round(averageAccuracy),
+      averageAccuracy: Math.round(averageAccuracy * 100) / 100,
       bestSpeed: 0,
-      bestAccuracy: Math.round(averageAccuracy),
+      bestAccuracy: Math.round(averageAccuracy * 100) / 100,
       totalTime: 0
     };
   };
@@ -189,9 +189,9 @@ export default function AccountPage() {
     return {
       totalGames,
       totalWords,
-      averageAccuracy: Math.round(averageAccuracy),
+      averageAccuracy: Math.round(averageAccuracy * 100) / 100,
       bestSpeed: 0,
-      bestAccuracy: Math.round(bestAccuracy),
+      bestAccuracy: Math.round(bestAccuracy * 100) / 100,
       totalTime
     };
   };
@@ -211,9 +211,9 @@ export default function AccountPage() {
     return {
       totalGames,
       totalWords,
-      averageAccuracy: Math.round(averageAccuracy),
-      bestSpeed: Math.round(bestSpeed),
-      bestAccuracy: Math.round(bestAccuracy),
+      averageAccuracy: Math.round(averageAccuracy * 100) / 100,
+      bestSpeed: Math.round(bestSpeed * 100) / 100,
+      bestAccuracy: Math.round(bestAccuracy * 100) / 100,
       totalTime
     };
   };
@@ -266,9 +266,9 @@ export default function AccountPage() {
     return {
       totalGames,
       totalWords: learnedWords, // Показуємо вивчені слова замість слів з ігор
-      averageAccuracy: Math.round(averageAccuracy),
-      bestSpeed: Math.round(bestSpeed),
-      bestAccuracy: Math.round(bestAccuracy),
+      averageAccuracy: Math.round(averageAccuracy * 100) / 100,
+      bestSpeed: Math.round(bestSpeed * 100) / 100,
+      bestAccuracy: Math.round(bestAccuracy * 100) / 100,
       totalTime
     };
   };
@@ -439,7 +439,7 @@ export default function AccountPage() {
                     const activeModes = modes.filter(m => m.totalGames > 0 || m.totalWords > 0);
                     if (activeModes.length === 0) return 0;
                     const avg = activeModes.reduce((sum, m) => sum + m.averageAccuracy, 0) / activeModes.length;
-                    return Math.round(avg);
+                    return (Math.round(avg * 100) / 100).toFixed(2);
                   })()}%
                 </div>
                 <p className="text-green-700">По всім режимам</p>
@@ -484,11 +484,11 @@ export default function AccountPage() {
               <div className="text-sm text-yellow-700">Вивчено слів</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{stats.allWords.averageAccuracy}%</div>
+              <div className="text-2xl font-bold text-yellow-600">{stats.allWords.averageAccuracy.toFixed(2)}%</div>
               <div className="text-sm text-yellow-700">Середня точність</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{stats.allWords.bestSpeed}</div>
+              <div className="text-2xl font-bold text-yellow-600">{stats.allWords.bestSpeed.toFixed(2)}</div>
               <div className="text-sm text-yellow-700">Найкраща швидкість (сл/хв)</div>
             </div>
           </div>
@@ -525,7 +525,7 @@ export default function AccountPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Найкраща точність:</span>
                       <span className="font-semibold text-blue-600">
-                        {stats.allWords.bestAccuracy > 0 ? `${stats.allWords.bestAccuracy}%` : 'Немає'}
+                        {stats.allWords.bestAccuracy > 0 ? `${stats.allWords.bestAccuracy.toFixed(2)}%` : 'Немає'}
                       </span>
                     </div>
                     
@@ -533,7 +533,7 @@ export default function AccountPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Найкраща швидкість:</span>
                       <span className="font-semibold text-red-600">
-                        {stats.allWords.bestSpeed > 0 ? `${stats.allWords.bestSpeed} сл/хв` : 'Немає'}
+                        {stats.allWords.bestSpeed > 0 ? `${stats.allWords.bestSpeed.toFixed(2)} сл/хв` : 'Немає'}
                       </span>
                     </div>
                   </div>
