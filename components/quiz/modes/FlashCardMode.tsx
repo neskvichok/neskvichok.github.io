@@ -1,165 +1,234 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { QuizSet, QuizWord } from "@/lib/quiz-data/types";
-import { saveWordProgress } from "@/lib/quiz-logic/persistence";
+import { getSetProgress, saveWordProgress } from "@/lib/quiz-logic/persistence";
+import { selectNextWord, isLearned, calcProgress } from "@/lib/quiz-logic/shortMemory";
+import { ProgressBar } from "@/components/quiz/ProgressBar";
+import { createClient } from "@/lib/supabase-client";
 
 interface FlashCardModeProps {
   setDef: QuizSet;
   onGameStateChange?: (isActive: boolean) => void;
 }
 
-interface WordProgress {
-  wordId: string;
-  knownCount: number;
-  direction: 'hint-to-answer' | 'answer-to-hint';
-}
-
 export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps) {
-  const [words, setWords] = useState<QuizWord[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [words, setWords] = useState<QuizWord[]>(() => setDef.words.map(w => ({ ...w, shortMemory: 0 })));
+  const [current, setCurrent] = useState<QuizWord | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [askedHistoryIds, setAskedHistoryIds] = useState<string[]>([]);
+  const [feedbackWords, setFeedbackWords] = useState<Array<{ id: string; hint: string; answer: string; remaining: number }>>([]);
+  const [blockedWords, setBlockedWords] = useState<string[]>([]);
+  const [wordCounter, setWordCounter] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [incorrectCount, setIncorrectCount] = useState(0);
-  const [skippedCount, setSkippedCount] = useState(0);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [endTime, setEndTime] = useState<number | null>(null);
-  const [wordProgress, setWordProgress] = useState<Map<string, WordProgress>>(new Map());
-  const [currentDirection, setCurrentDirection] = useState<'hint-to-answer' | 'answer-to-hint'>('hint-to-answer');
-  
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const currentWord = words[currentIndex];
-  const totalWords = words.length;
-  const progress = totalWords > 0 ? ((currentIndex + 1) / totalWords) * 100 : 0;
+  const startedAtRef = useRef(performance.now());
 
   useEffect(() => {
-    if (setDef?.words) {
-      setWords([...setDef.words]);
-      setCurrentIndex(0);
-      setIsFlipped(false);
-      setIsStarted(false);
-      setIsFinished(false);
-      setCorrectCount(0);
-      setIncorrectCount(0);
-      setSkippedCount(0);
-      setStartTime(null);
-      setEndTime(null);
-      setWordProgress(new Map());
-      setCurrentDirection('hint-to-answer');
-    }
-  }, [setDef]);
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const progress = await getSetProgress(userId, setDef.id);
+      const merged = setDef.words.map(w => ({
+        ...w,
+        shortMemory: (progress as any)[w.id]?.shortMemory ?? 0,
+      }));
+      if (!mounted) return;
+      setWords(merged);
+      // При первинному виборі також врахуємо історію (порожня на старті)
+      let selectable = merged.filter(w => !isLearned(w) && !askedHistoryIds.includes(w.id) && !blockedWords.includes(w.id));
+      if (selectable.length === 0) {
+        // Якщо вибору немає, дозволимо з історії
+        selectable = merged.filter(w => !isLearned(w) && !blockedWords.includes(w.id));
+      }
+      if (selectable.length === 0) {
+        // Якщо все ще немає вибору, дозволимо все крім вивчених
+        selectable = merged.filter(w => !isLearned(w));
+      }
+      // Якщо всі слова в feedback, дозволимо їх
+      if (selectable.length === 0 && feedbackWords.length > 0) {
+        selectable = merged.filter(w => !isLearned(w));
+      }
+      // Якщо все ще немає вибору, дозволимо вивчені слова
+      if (selectable.length === 0) {
+        selectable = merged.filter(w => !askedHistoryIds.includes(w.id) && !blockedWords.includes(w.id));
+      }
+      // Якщо все ще немає вибору, показуємо будь-яке слово
+      if (selectable.length === 0) {
+        selectable = merged.filter(w => !blockedWords.includes(w.id));
+      }
+      // Якщо всі слова заблоковані, показуємо будь-яке слово
+      if (selectable.length === 0) {
+        selectable = merged;
+      }
+      setCurrent(selectable.length ? selectNextWord(selectable) : null);
+      startedAtRef.current = performance.now();
+    })();
+    return () => { mounted = false; };
+  }, [userId, setDef.id]);
+
+  const progress = calcProgress(words);
 
   const startSession = () => {
     setIsStarted(true);
-    setStartTime(Date.now());
     onGameStateChange?.(true);
-  };
-
-  const finishSession = () => {
-    setIsFinished(true);
-    setEndTime(Date.now());
-    onGameStateChange?.(false);
   };
 
   const flipCard = () => {
     setIsFlipped(!isFlipped);
   };
 
-  const markAsKnown = async () => {
-    if (!currentWord) return;
-    
-    const currentProgress = wordProgress.get(currentWord.id) || { wordId: currentWord.id, knownCount: 0, direction: currentDirection };
-    const newKnownCount = currentProgress.knownCount + 1;
-    
-    setWordProgress(prev => new Map(prev.set(currentWord.id, {
-      ...currentProgress,
-      knownCount: newKnownCount
-    })));
-    
-    setCorrectCount(prev => prev + 1);
-    
-    // Зберігаємо прогрес
-    await saveWordProgress(null, currentWord.originalSetId || setDef.id, currentWord.id, { shortMemory: Math.min(newKnownCount * 4, 20) });
-    
-    // Якщо слово вивчено (5 разів "Знаю"), переходимо до наступного
-    if (newKnownCount >= 5) {
-      nextWord();
-    } else {
-      // Інакше змінюємо напрямок і показуємо знову
-      setCurrentDirection(prev => prev === 'hint-to-answer' ? 'answer-to-hint' : 'hint-to-answer');
-      setIsFlipped(false);
+  async function applyResult(ok: boolean) {
+    const nextWords = words.map(w => {
+      if (!current || w.id !== current.id) return w;
+      // Якщо це вивчене слово і відповідь неправильна, скинути до 0
+      const newShortMemory = ok ? (w.shortMemory ?? 0) + 1 : 0;
+      return { ...w, shortMemory: newShortMemory };
+    });
+    setWords(nextWords);
+
+    if (current) {
+      // Використовуємо originalSetId якщо є (для об'єднаних наборів), інакше setDef.id
+      let targetSetId = current.originalSetId || setDef.id;
+      
+      // Для "Всі слова" зберігаємо з оригінальним set_id слова
+      if (setDef.id === 'all-words-combined' && current.originalSetId) {
+        targetSetId = current.originalSetId;
+      }
+      
+      await saveWordProgress(userId, targetSetId, current.id, {
+        shortMemory: nextWords.find(w => w.id === current.id)?.shortMemory ?? 0,
+      });
     }
-  };
 
-  const markAsUnknown = async () => {
-    if (!currentWord) return;
-    
-    const currentProgress = wordProgress.get(currentWord.id) || { wordId: currentWord.id, knownCount: 0, direction: currentDirection };
-    
-    setWordProgress(prev => new Map(prev.set(currentWord.id, {
-      ...currentProgress,
-      knownCount: Math.max(0, currentProgress.knownCount - 1) // Зменшуємо прогрес
-    })));
-    
-    setIncorrectCount(prev => prev + 1);
-    
-    // Зберігаємо прогрес
-    await saveWordProgress(null, currentWord.originalSetId || setDef.id, currentWord.id, { shortMemory: Math.max(0, (currentProgress.knownCount - 1) * 4) });
-    
-    // Змінюємо напрямок і показуємо знову
-    setCurrentDirection(prev => prev === 'hint-to-answer' ? 'answer-to-hint' : 'hint-to-answer');
-    setIsFlipped(false);
-  };
+    // Оновити історію (відкласти поточне слово мінімум на 3 наступних)
+    const newHistory = current ? [...askedHistoryIds, current.id].slice(-3) : askedHistoryIds;
+    setAskedHistoryIds(newHistory);
 
-  const markForReview = async () => {
-    if (!currentWord) return;
-    
-    setSkippedCount(prev => prev + 1);
-    
-    // Змінюємо напрямок і показуємо знову
-    setCurrentDirection(prev => prev === 'hint-to-answer' ? 'answer-to-hint' : 'hint-to-answer');
-    setIsFlipped(false);
-  };
+    // Зменшити лічильник для всіх feedback слів (крім поточного, якщо він щойно доданий) і видалити ті, що досягли 0
+    setFeedbackWords(prev => {
+      const updated = prev.map(word => ({
+        ...word,
+        remaining: word.id === current?.id ? word.remaining : word.remaining - 1
+      })).filter(word => word.remaining > 0);
+      
+      // Оновити заблоковані слова - видалити ті, що досягли лічильника 0
+      const remainingIds = updated.map(word => word.id);
+      setBlockedWords(prevBlocked => {
+        const newBlocked = prevBlocked.filter(id => remainingIds.includes(id));
+        return newBlocked;
+      });
+      
+      return updated;
+    });
 
-  const nextWord = () => {
-    if (currentIndex < words.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      setIsFlipped(false);
-      // Випадково вибираємо напрямок для наступного слова
-      setCurrentDirection(Math.random() > 0.5 ? 'hint-to-answer' : 'answer-to-hint');
-    } else {
-      finishSession();
+    // Визначити чи потрібно показати вивчене слово для повторення
+    const unlearnedCount = nextWords.filter(w => !isLearned(w) && !newHistory.includes(w.id) && !blockedWords.includes(w.id)).length;
+    const shouldShowLearned = wordCounter % 10 === 0 || 
+      unlearnedCount < 3 || 
+      calcProgress(nextWords) === 100;
+    
+    let pool: QuizWord[] = [];
+    
+    if (shouldShowLearned) {
+      // Показати вивчене слово для повторення
+      const learnedWords = nextWords.filter(w => isLearned(w) && !newHistory.includes(w.id) && !blockedWords.includes(w.id));
+      if (learnedWords.length > 0) {
+        const selectedWord = selectNextWord(learnedWords);
+        if (selectedWord) {
+          pool = [selectedWord];
+        }
+      }
+      // Якщо прогрес 100%, можна показувати і невивчені слова для повторення
+      if (pool.length === 0 && calcProgress(nextWords) === 100) {
+        const allWords = nextWords.filter(w => !newHistory.includes(w.id) && !blockedWords.includes(w.id));
+        if (allWords.length > 0) {
+          const selectedWord = selectNextWord(allWords);
+          if (selectedWord) {
+            pool = [selectedWord];
+          }
+        }
+      }
     }
-  };
-
-  const resetSession = () => {
-    setCurrentIndex(0);
+    
+    // Якщо не показуємо вивчене або немає вивчених, показуємо невивчені
+    if (pool.length === 0) {
+      pool = nextWords.filter(w => !isLearned(w) && !newHistory.includes(w.id) && !blockedWords.includes(w.id));
+      
+      if (pool.length === 0) {
+        // Якщо вибору немає, дозволимо з історії (щоб не зациклитись)
+        pool = nextWords.filter(w => !isLearned(w) && !blockedWords.includes(w.id));
+      }
+      if (pool.length === 0) {
+        // Якщо все ще немає вибору, дозволимо все крім вивчених
+        pool = nextWords.filter(w => !isLearned(w));
+      }
+      // Якщо всі слова в feedback, дозволимо їх
+      if (pool.length === 0 && feedbackWords.length > 0) {
+        pool = nextWords.filter(w => !isLearned(w));
+      }
+    }
+    
+    // Якщо все ще немає слів (всі вивчені), показуємо будь-яке слово для повторення
+    if (pool.length === 0) {
+      pool = nextWords.filter(w => !newHistory.includes(w.id) && !blockedWords.includes(w.id));
+      
+      if (pool.length === 0) {
+        // Якщо все ще немає вибору, показуємо будь-яке слово
+        pool = nextWords.filter(w => !blockedWords.includes(w.id));
+      }
+      
+      if (pool.length === 0) {
+        // Якщо всі слова заблоковані, показуємо будь-яке слово
+        pool = nextWords;
+      }
+    }
+    
+    // Змішати pool перед вибором для більшої випадковості
+    const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
+    setCurrent(shuffledPool.length ? shuffledPool[0] : null);
     setIsFlipped(false);
-    setIsStarted(false);
-    setIsFinished(false);
-    setCorrectCount(0);
-    setIncorrectCount(0);
-    setSkippedCount(0);
-    setStartTime(null);
-    setEndTime(null);
-    setWordProgress(new Map());
-    setCurrentDirection('hint-to-answer');
-    onGameStateChange?.(false);
-  };
+  }
 
-  const getTimeSpent = () => {
-    if (!startTime) return 0;
-    const end = endTime || Date.now();
-    return Math.floor((end - startTime) / 1000);
-  };
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return minutes > 0 ? `${minutes}хв ${secs}с` : `${secs}с`;
-  };
+  function processAnswer(ok: boolean) {
+    if (!current) return;
+    
+    if (!ok) {
+      // Додати або оновити слово в feedback
+      setFeedbackWords(prev => {
+        const existingIndex = prev.findIndex(w => w.id === current.id);
+        if (existingIndex >= 0) {
+          // Якщо слово вже є, оновити лічильник на максимум
+          const updated = [...prev];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            remaining: Math.max(updated[existingIndex].remaining, 5)
+          };
+          return updated;
+        } else {
+          // Додати нове слово з лічильником 5
+          return [
+            ...prev,
+            {
+              id: current.id,
+              hint: current.hint,
+              answer: Array.isArray(current.answer) ? current.answer.join(", ") : current.answer,
+              remaining: 5
+            }
+          ];
+        }
+      });
+      // Заблокувати слово на 5 наступних вводів
+      setBlockedWords(prev => [...prev, current.id]);
+    }
+    
+    setWordCounter(prev => prev + 1);
+    applyResult(ok);
+    startedAtRef.current = performance.now();
+  }
 
   if (!words.length) {
     return (
@@ -184,17 +253,17 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h3 className="font-semibold text-blue-800 mb-2">Як працює режим:</h3>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Подивіться на слово/фразу або відповідь</li>
+            <li>• Подивіться на слово/фразу</li>
             <li>• Натисніть "Показати відповідь"</li>
-            <li>• Оцініть свої знання: "Знаю", "Не знаю", "Повторити"</li>
-            <li>• Потрібно 5 разів сказати "Знаю", щоб слово зникло</li>
-            <li>• Картки показуються в обох напрямках</li>
+            <li>• Оцініть свої знання: "Знаю", "Не знаю"</li>
+            <li>• Слово вважається вивченим після 15 правильних відповідей</li>
+            <li>• Система адаптивних повторень як в режимі навчання</li>
           </ul>
         </div>
 
         <div className="mb-6">
           <p className="text-lg">
-            <strong>{totalWords}</strong> слів для вивчення
+            <strong>{words.length}</strong> слів для вивчення
           </p>
         </div>
 
@@ -208,180 +277,137 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
     );
   }
 
-  if (isFinished) {
-    const timeSpent = getTimeSpent();
-    const accuracy = totalWords > 0 ? Math.round((correctCount / totalWords) * 100) : 0;
-
-    return (
-      <div className="text-center">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">🎉 Сесія завершена!</h2>
-          <p className="text-gray-600">Ви пройшли всі флеш-картки в цьому наборі.</p>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-600">{correctCount}</div>
-            <div className="text-sm text-green-700">Знаю</div>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="text-2xl font-bold text-red-600">{incorrectCount}</div>
-            <div className="text-sm text-red-700">Не знаю</div>
-          </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="text-2xl font-bold text-yellow-600">{skippedCount}</div>
-            <div className="text-sm text-yellow-700">Повторити</div>
-          </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="text-2xl font-bold text-blue-600">{formatTime(timeSpent)}</div>
-            <div className="text-sm text-blue-700">Час</div>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <div className="text-lg">
-            <strong>Точність:</strong> {accuracy}%
-          </div>
-        </div>
-
-        <div className="space-x-4">
-          <button 
-            onClick={resetSession}
-            className="btn btn-primary"
-          >
-            Повторити
-          </button>
+  return (
+    <div className="grid gap-6">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="ml-auto w-full md:w-64">
+          <ProgressBar value={progress} />
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="max-w-2xl mx-auto">
-      {/* Прогрес */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-gray-600">
-            Слово {currentIndex + 1} з {totalWords}
-          </span>
-          <span className="text-sm text-gray-600">
-            {Math.round(progress)}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-        {currentWord && (
-          <div className="mt-2 text-center">
-            <div className="text-xs text-gray-500">
-              Прогрес цього слова: {wordProgress.get(currentWord.id)?.knownCount || 0}/5
+      <div className="card p-6">
+        {current ? (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="text-sm text-gray-500">Підказка</div>
+              {isLearned(current) && (
+                <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  Повторення
+                </div>
+              )}
+              {calcProgress(words) === 100 && (
+                <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  Всі вивчені!
+                </div>
+              )}
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl md:text-3xl font-semibold">{current.hint}</div>
+              <div className="text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                {current.shortMemory ?? 0}/15
+              </div>
+              <div className="text-xs text-gray-500">
+                Доступно: {words.filter(w => !isLearned(w) && !askedHistoryIds.includes(w.id) && !blockedWords.includes(w.id)).length}
+              </div>
+            </div>
+
+            {/* Флеш-картка */}
+            <div className="mt-6">
               <div 
-                className="bg-green-500 h-1 rounded-full transition-all duration-300"
-                style={{ width: `${((wordProgress.get(currentWord.id)?.knownCount || 0) / 5) * 100}%` }}
-              ></div>
+                className="bg-white border-2 border-gray-200 rounded-lg p-4 md:p-8 min-h-[150px] md:min-h-[200px] flex items-center justify-center cursor-pointer transition-all duration-300 hover:border-blue-300"
+                onClick={flipCard}
+              >
+                <div className="text-center">
+                  {!isFlipped ? (
+                    <div>
+                      <div className="text-sm text-gray-500 mb-2">Слово/Фраза</div>
+                      <div className="text-lg md:text-2xl font-bold text-gray-800">
+                        {current.hint}
+                      </div>
+                      <div className="text-sm text-gray-400 mt-4">
+                        Натисніть, щоб показати відповідь
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-sm text-gray-500 mb-2">Відповідь</div>
+                      <div className="text-lg md:text-xl font-semibold text-gray-800">
+                        {Array.isArray(current.answer) ? current.answer.join(", ") : current.answer}
+                      </div>
+                      <div className="text-sm text-gray-400 mt-4">
+                        Натисніть, щоб приховати відповідь
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Кнопки дій */}
+            {isFlipped && (
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                <button 
+                  onClick={() => processAnswer(true)}
+                  className="btn btn-success text-sm md:text-base py-3 md:py-2"
+                >
+                  ✅ Знаю
+                </button>
+                <button 
+                  onClick={() => processAnswer(false)}
+                  className="btn btn-error text-sm md:text-base py-3 md:py-2"
+                >
+                  ❌ Не знаю
+                </button>
+              </div>
+            )}
+
+            {/* Кнопка показати відповідь */}
+            {!isFlipped && (
+              <div className="mt-6 text-center">
+                <button 
+                  onClick={flipCard}
+                  className="btn btn-primary text-sm md:text-base py-3 md:py-2"
+                >
+                  Показати відповідь
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-gray-700">
+            Завантаження наступного слова...
           </div>
         )}
       </div>
 
-      {/* Флеш-картка */}
-      <div className="mb-8">
-        <div 
-          className="bg-white border-2 border-gray-200 rounded-lg p-4 md:p-8 min-h-[150px] md:min-h-[200px] flex items-center justify-center cursor-pointer transition-all duration-300 hover:border-blue-300"
-          onClick={flipCard}
-        >
-          <div className="text-center">
-            {!isFlipped ? (
-              <div>
-                <div className="text-sm text-gray-500 mb-2">
-                  {currentDirection === 'hint-to-answer' ? 'Слово/Фраза' : 'Відповідь'}
+      {feedbackWords.length > 0 && (
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <div className="text-sm font-semibold text-red-800">Неправильні відповіді</div>
+            <div className="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+              {feedbackWords.length} слів
+            </div>
+          </div>
+          <div className="grid gap-2">
+            {feedbackWords.map((word, index) => (
+              <div key={word.id} className="flex items-center justify-between bg-white/60 rounded-md p-2 border border-red-100">
+                <div className="text-sm text-gray-800">
+                  <span className="font-medium text-red-700">{word.hint}</span>
+                  <span className="text-gray-500 mx-1">→</span>
+                  <span className="font-semibold text-green-700">{word.answer}</span>
                 </div>
-                <div className="text-lg md:text-2xl font-bold text-gray-800">
-                  {currentDirection === 'hint-to-answer' 
-                    ? currentWord?.hint 
-                    : (Array.isArray(currentWord?.answer) ? currentWord.answer.join(", ") : currentWord?.answer)
-                  }
-                </div>
-                <div className="text-sm text-gray-400 mt-4">
-                  Натисніть, щоб показати {currentDirection === 'hint-to-answer' ? 'відповідь' : 'слово/фразу'}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="text-sm text-gray-500 mb-2">
-                  {currentDirection === 'hint-to-answer' ? 'Відповідь' : 'Слово/Фраза'}
-                </div>
-                <div className="text-lg md:text-xl font-semibold text-gray-800">
-                  {currentDirection === 'hint-to-answer' 
-                    ? (Array.isArray(currentWord?.answer) ? currentWord.answer.join(", ") : currentWord?.answer)
-                    : currentWord?.hint
-                  }
-                </div>
-                <div className="text-sm text-gray-400 mt-4">
-                  Натисніть, щоб приховати {currentDirection === 'hint-to-answer' ? 'відповідь' : 'слово/фразу'}
+                <div className="flex items-center gap-1">
+                  <div className="text-xs text-gray-500">залишилося</div>
+                  <div className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full min-w-[20px] text-center">
+                    {word.remaining}
+                  </div>
                 </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
-      </div>
-
-      {/* Кнопки дій */}
-      {isFlipped && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6">
-          <button 
-            onClick={markAsKnown}
-            className="btn btn-success text-sm md:text-base py-3 md:py-2"
-          >
-            ✅ Знаю
-          </button>
-          <button 
-            onClick={markAsUnknown}
-            className="btn btn-error text-sm md:text-base py-3 md:py-2"
-          >
-            ❌ Не знаю
-          </button>
-          <button 
-            onClick={markForReview}
-            className="btn btn-warning text-sm md:text-base py-3 md:py-2"
-          >
-            🔄 Повторити
-          </button>
-        </div>
       )}
-
-      {/* Кнопка показати/приховати відповідь */}
-      {!isFlipped && (
-        <div className="text-center">
-          <button 
-            onClick={flipCard}
-            className="btn btn-primary text-sm md:text-base py-3 md:py-2"
-          >
-            Показати відповідь
-          </button>
-        </div>
-      )}
-
-      {/* Статистика */}
-      <div className="grid grid-cols-3 gap-4 text-center text-sm">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <div className="font-semibold text-green-600">{correctCount}</div>
-          <div className="text-green-700">Знаю</div>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <div className="font-semibold text-red-600">{incorrectCount}</div>
-          <div className="text-red-700">Не знаю</div>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <div className="font-semibold text-yellow-600">{skippedCount}</div>
-          <div className="text-yellow-700">Повторити</div>
-        </div>
-      </div>
     </div>
   );
 }
