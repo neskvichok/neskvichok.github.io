@@ -73,8 +73,8 @@ export default function Home() {
           </div>
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <div className="text-2xl mb-2">🎯</div>
-            <h3 className="font-semibold mb-2">Три режими тренування</h3>
-            <p className="text-sm text-gray-600">Навчання, точність та швидкість для різних цілей</p>
+            <h3 className="font-semibold mb-2">Чотири режими тренування</h3>
+            <p className="text-sm text-gray-600">Навчання, точність, швидкість та флеш-картки для різних цілей</p>
           </div>
           <div className="text-center p-4 bg-yellow-50 rounded-lg">
             <div className="text-2xl mb-2">🌍</div>
@@ -92,7 +92,7 @@ export default function Home() {
       {/* Опис режимів */}
       <div className="card p-6">
         <h2 className="text-2xl font-semibold mb-4">Режими тренування</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
           {/* Режим навчання */}
           <div className="border rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -146,6 +146,24 @@ export default function Home() {
               <li>• Без повторень</li>
             </ul>
           </div>
+
+          {/* Режим флеш-карток */}
+          <div className="border rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="text-3xl">🃏</div>
+              <h3 className="text-xl font-semibold">Режим «Флеш-картки»</h3>
+            </div>
+            <p className="text-gray-600 mb-4">
+              Класичний метод вивчення з флеш-картками. 
+              Переглядайте слово, оцінюйте свої знання та переходите далі.
+            </p>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Без обмежень за часом</li>
+              <li>• Один набір або "Всі слова"</li>
+              <li>• Оцінка знань: "Знаю", "Не знаю", "Повторити"</li>
+              <li>• Збереження прогресу</li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -166,7 +184,7 @@ export default function Home() {
             <h3 className="text-lg font-semibold mb-3">📚 Індивідуальні набори</h3>
             <ul className="text-gray-600 space-y-2">
               <li>• <strong>Множинний вибір</strong> в режимі навчання</li>
-              <li>• <strong>Один набір</strong> в режимах точності та швидкості</li>
+              <li>• <strong>Один набір</strong> в режимах точності, швидкості та флеш-карток</li>
               <li>• <strong>Детальна статистика</strong> для кожного набору</li>
               <li>• <strong>Прогрес-бари</strong> для відстеження вивчення</li>
             </ul>

@@ -9,18 +9,18 @@ export function MultiSetPicker({
   sets: QuizSet[]; 
   selectedSetIds: string[]; 
   onChange: (setIds: string[]) => void;
-  mode?: "education" | "accuracy" | "speed";
+  mode?: "education" | "accuracy" | "speed" | "flashcards";
 }) {
   const toggleSet = (setId: string) => {
-    const isAccuracyOrSpeed = mode === "accuracy" || mode === "speed";
+    const isSingleSetMode = mode === "accuracy" || mode === "speed" || mode === "flashcards";
     
     if (selectedSetIds.includes(setId)) {
       // Знімаємо вибір
       onChange(selectedSetIds.filter(id => id !== setId));
     } else {
       // Додаємо вибір
-      if (isAccuracyOrSpeed) {
-        // Для Accuracy і Speed тільки один набір або "Всі слова"
+      if (isSingleSetMode) {
+        // Для Accuracy, Speed і Flashcards тільки один набір або "Всі слова"
         if (setId === 'all-words-combined') {
           onChange([setId]);
         } else {

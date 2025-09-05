@@ -8,6 +8,7 @@ import type { QuizSet } from "@/lib/quiz-data/types";
 import { EducationMode } from "@/components/quiz/modes/EducationMode";
 import { AccuracyMode } from "@/components/quiz/modes/AccuracyMode";
 import { SpeedMode } from "@/components/quiz/modes/SpeedMode";
+import { FlashCardMode } from "@/components/quiz/modes/FlashCardMode";
 import { addWordToSet, deleteWord, fetchSetsWithWords } from "@/lib/quiz-data/db";
 import { combineSets, createAllWordsSet } from "@/lib/quiz-data/combined-sets";
 import { withBasePath } from "@/lib/utils";
@@ -16,6 +17,7 @@ const MODES = {
   education: { name: "Навчання", component: EducationMode, status: "ready" },
   accuracy: { name: "Точність", component: AccuracyMode, status: "ready" },
   speed: { name: "Швидкість", component: SpeedMode, status: "ready" },
+  flashcards: { name: "Флеш-картки", component: FlashCardMode, status: "ready" },
 };
 
 export default function QuizHomePage() {
@@ -27,8 +29,8 @@ export default function QuizHomePage() {
   const handleModeChange = (mode: keyof typeof MODES) => {
     setSelectedMode(mode);
     
-    // Якщо переключаємося на Accuracy або Speed і вибрано більше одного набору
-    if ((mode === "accuracy" || mode === "speed") && selectedSetIds.length > 1) {
+    // Якщо переключаємося на Accuracy, Speed або Flashcards і вибрано більше одного набору
+    if ((mode === "accuracy" || mode === "speed" || mode === "flashcards") && selectedSetIds.length > 1) {
       // Залишаємо тільки перший вибраний набір або "Всі слова"
       const firstSetId = selectedSetIds.find(id => id === 'all-words-combined') || selectedSetIds[0];
       setSelectedSetIds([firstSetId]);
@@ -37,8 +39,8 @@ export default function QuizHomePage() {
   const [isGameActive, setIsGameActive] = useState(false);
  
   const selectedSet = useMemo(() => {
-    // Для режимів Accuracy і Speed обмежуємо вибір до одного набору
-    if (selectedMode === "accuracy" || selectedMode === "speed") {
+    // Для режимів Accuracy, Speed і Flashcards обмежуємо вибір до одного набору
+    if (selectedMode === "accuracy" || selectedMode === "speed" || selectedMode === "flashcards") {
       if (selectedSetIds.includes('all-words-combined')) {
         return createAllWordsSet(sets);
       } else if (selectedSetIds.length > 1) {
@@ -109,7 +111,7 @@ export default function QuizHomePage() {
               {selectedSet ? (
                 <SelectedModeComponent 
                   setDef={selectedSet} 
-                  onGameStateChange={selectedMode === "accuracy" || selectedMode === "speed" ? setIsGameActive : undefined}
+                  onGameStateChange={selectedMode === "accuracy" || selectedMode === "speed" || selectedMode === "flashcards" ? setIsGameActive : undefined}
                 />
               ) : (
                 <div className="text-gray-700">Виберіть хоча б один набір для початку квізу.</div>
@@ -125,10 +127,14 @@ export default function QuizHomePage() {
               </div>
               <div className="card p-4">
                 <h3 className="text-lg font-semibold mb-4">Набори слів</h3>
-                {(selectedMode === "accuracy" || selectedMode === "speed") && (
+                {(selectedMode === "accuracy" || selectedMode === "speed" || selectedMode === "flashcards") && (
                   <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-700">
-                      💡 Для режимів <strong>{selectedMode === "accuracy" ? "Точність" : "Швидкість"}</strong> можна вибрати тільки один набір або "Всі слова"
+                      💡 Для режимів <strong>
+                        {selectedMode === "accuracy" ? "Точність" : 
+                         selectedMode === "speed" ? "Швидкість" : 
+                         "Флеш-картки"}
+                      </strong> можна вибрати тільки один набір або "Всі слова"
                     </p>
                   </div>
                 )}
