@@ -253,14 +253,14 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
       {/* Флеш-картка */}
       <div className="mb-8">
         <div 
-          className="bg-white border-2 border-gray-200 rounded-lg p-8 min-h-[200px] flex items-center justify-center cursor-pointer transition-all duration-300 hover:border-blue-300"
+          className="bg-white border-2 border-gray-200 rounded-lg p-4 md:p-8 min-h-[150px] md:min-h-[200px] flex items-center justify-center cursor-pointer transition-all duration-300 hover:border-blue-300"
           onClick={flipCard}
         >
           <div className="text-center">
             {!isFlipped ? (
               <div>
                 <div className="text-sm text-gray-500 mb-2">Слово/Фраза</div>
-                <div className="text-2xl font-bold text-gray-800">
+                <div className="text-lg md:text-2xl font-bold text-gray-800">
                   {currentWord?.hint}
                 </div>
                 <div className="text-sm text-gray-400 mt-4">
@@ -270,7 +270,7 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
             ) : (
               <div>
                 <div className="text-sm text-gray-500 mb-2">Відповідь</div>
-                <div className="text-xl font-semibold text-gray-800">
+                <div className="text-lg md:text-xl font-semibold text-gray-800">
                   {Array.isArray(currentWord?.answer) ? currentWord.answer.join(", ") : currentWord?.answer}
                 </div>
                 <div className="text-sm text-gray-400 mt-4">
@@ -284,22 +284,22 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
 
       {/* Кнопки дій */}
       {isFlipped && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6">
           <button 
             onClick={markAsKnown}
-            className="btn btn-success btn-lg"
+            className="btn btn-success text-sm md:text-base py-3 md:py-2"
           >
             ✅ Знаю
           </button>
           <button 
             onClick={markAsUnknown}
-            className="btn btn-error btn-lg"
+            className="btn btn-error text-sm md:text-base py-3 md:py-2"
           >
             ❌ Не знаю
           </button>
           <button 
             onClick={markForReview}
-            className="btn btn-warning btn-lg"
+            className="btn btn-warning text-sm md:text-base py-3 md:py-2"
           >
             🔄 Повторити
           </button>
@@ -311,7 +311,7 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
         <div className="text-center">
           <button 
             onClick={flipCard}
-            className="btn btn-primary btn-lg"
+            className="btn btn-primary text-sm md:text-base py-3 md:py-2"
           >
             Показати відповідь
           </button>

@@ -41,7 +41,7 @@ export default function Home() {
       <div className="card p-8 text-center">
         <h1 className="text-4xl font-bold mb-4">QuizTrainer 🎯</h1>
         <p className="text-xl text-gray-600 mb-6">Інтерактивний тренажер для вивчення іноземних слів</p>
-        <div className="flex justify-center gap-3">
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
           {user ? (
             <>
               <Link className="btn btn-primary" href={withBasePath("/quiz")}>Почати квіз</Link>

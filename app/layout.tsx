@@ -40,27 +40,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <title>Quiz Trainer - Інтерактивний Тренажер Слів</title>
         <meta name="description" content="Сучасний веб-додаток для вивчення іноземних слів з використанням інтерактивних квізів" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body>
         <nav className="bg-white border-b border-gray-200">
           <div className="container-nice flex h-14 items-center justify-between">
-            <Link href={withBasePath("/")} className="font-semibold">QuizTrainer</Link>
-            <div className="flex items-center gap-2">
+            <Link href={withBasePath("/")} className="font-semibold text-lg">QuizTrainer</Link>
+            <div className="flex items-center gap-1 md:gap-2">
               {!loading && (
                 user ? (
                   <>
-                    <Link className="btn btn-ghost" href={withBasePath("/quiz")}>Квізи</Link>
-                    <Link className="btn btn-ghost" href={withBasePath("/quiz/manage")}>Керувати наборами</Link>
-                    <Link className="btn btn-ghost" href={withBasePath("/account")}>Профіль</Link>
-                    <Link href={withBasePath("/account/settings")} aria-label="Налаштування акаунту" className="w-8 h-8 rounded-full bg-black text-white grid place-items-center">
+                    <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/quiz")}>Квізи</Link>
+                    <Link className="btn btn-ghost text-xs md:text-sm hidden sm:inline-flex" href={withBasePath("/quiz/manage")}>Керувати</Link>
+                    <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/account")}>Профіль</Link>
+                    <Link href={withBasePath("/account/settings")} aria-label="Налаштування акаунту" className="w-8 h-8 rounded-full bg-black text-white grid place-items-center text-sm">
                       {(user.email?.[0] || 'A').toUpperCase()}
                     </Link>
                     <SignOutButton />
                   </>
                 ) : (
                   <>
-                    <Link className="btn btn-ghost" href={withBasePath("/auth/sign-in")}>Увійти</Link>
-                    <Link className="btn btn-primary" href={withBasePath("/auth/sign-up")}>Реєстрація</Link>
+                    <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/auth/sign-in")}>Увійти</Link>
+                    <Link className="btn btn-primary text-xs md:text-sm" href={withBasePath("/auth/sign-up")}>Реєстрація</Link>
                   </>
                 )
               )}
