@@ -1,6 +1,6 @@
 import type { QuizWord } from "@/lib/quiz-data/types";
 
-export const LEARNED_THRESHOLD = 15;
+export const LEARNED_THRESHOLD = 5;
 
 export function isLearned(word: QuizWord): boolean {
   return (word.shortMemory ?? 0) > LEARNED_THRESHOLD;
@@ -26,8 +26,8 @@ export function selectNextWord(words: QuizWord[]): QuizWord | null {
     .filter(w => (w.shortMemory ?? 0) > minShortMemory)
     .map(w => w.shortMemory ?? 0));
   
-  // Якщо різниця між найменшим і другим найменшим невелика (≤ 2), включити обидва
-  const finalCandidates = secondMinShortMemory - minShortMemory <= 2
+  // Якщо різниця між найменшим і другим найменшим невелика (≤ 1), включити обидва
+  const finalCandidates = secondMinShortMemory - minShortMemory <= 1
     ? words.filter(w => (w.shortMemory ?? 0) <= secondMinShortMemory)
     : candidates;
   

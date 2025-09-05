@@ -188,7 +188,12 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
     }
     
     // Змішати pool перед вибором для більшої випадковості
-    const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
+    // Використовуємо більш надійний алгоритм перемішування
+    const shuffledPool = [...pool];
+    for (let i = shuffledPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledPool[i], shuffledPool[j]] = [shuffledPool[j], shuffledPool[i]];
+    }
     setCurrent(shuffledPool.length ? shuffledPool[0] : null);
     setIsFlipped(false);
   }
@@ -256,7 +261,7 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
             <li>• Подивіться на слово/фразу</li>
             <li>• Натисніть "Показати відповідь"</li>
             <li>• Оцініть свої знання: "Знаю", "Не знаю"</li>
-            <li>• Слово вважається вивченим після 15 правильних відповідей</li>
+            <li>• Слово вважається вивченим після 5 правильних відповідей</li>
             <li>• Система адаптивних повторень як в режимі навчання</li>
           </ul>
         </div>
@@ -304,7 +309,7 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
             <div className="flex items-center gap-3">
               <div className="text-2xl md:text-3xl font-semibold">{current.hint}</div>
               <div className="text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                {current.shortMemory ?? 0}/15
+                {current.shortMemory ?? 0}/5
               </div>
               <div className="text-xs text-gray-500">
                 Доступно: {words.filter(w => !isLearned(w) && !askedHistoryIds.includes(w.id) && !blockedWords.includes(w.id)).length}
