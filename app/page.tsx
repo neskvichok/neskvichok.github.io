@@ -45,6 +45,7 @@ export default function Home() {
           {user ? (
             <>
               <Link className="btn btn-primary" href={withBasePath("/quiz")}>Почати квіз</Link>
+              <Link className="btn btn-ghost" href={withBasePath("/sentences")}>Генератор речень</Link>
               <Link className="btn btn-ghost" href={withBasePath("/quiz/manage")}>Керувати наборами</Link>
               <Link className="btn btn-ghost" href={withBasePath("/account")}>Мій профіль</Link>
             </>
@@ -65,7 +66,7 @@ export default function Home() {
           Використовуючи інтерактивні квізи та адаптивну систему повторень, 
           ви можете швидко та результативно розширити свій словниковий запас.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
             <div className="text-2xl mb-2">📚</div>
             <h3 className="font-semibold mb-2">Персоналізовані набори</h3>
@@ -85,6 +86,11 @@ export default function Home() {
             <div className="text-2xl mb-2">📊</div>
             <h3 className="font-semibold mb-2">Детальна статистика</h3>
             <p className="text-sm text-gray-600">Відстежуйте свій прогрес та досягнення</p>
+          </div>
+          <div className="text-center p-4 bg-orange-50 rounded-lg">
+            <div className="text-2xl mb-2">🎲</div>
+            <h3 className="font-semibold mb-2">Генератор речень</h3>
+            <p className="text-sm text-gray-600">Створюйте речення для тренування слів</p>
           </div>
         </div>
       </div>
