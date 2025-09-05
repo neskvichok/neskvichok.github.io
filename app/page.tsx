@@ -45,13 +45,14 @@ export default function Home() {
           {user ? (
             <>
               <Link className="btn btn-primary" href={withBasePath("/quiz")}>Почати квіз</Link>
-              <Link className="btn btn-ghost" href={withBasePath("/sentences")}>Генератор речень</Link>
+              <Link className="btn btn-secondary" href={withBasePath("/sentences")}>🎲 Генератор речень</Link>
               <Link className="btn btn-ghost" href={withBasePath("/quiz/manage")}>Керувати наборами</Link>
               <Link className="btn btn-ghost" href={withBasePath("/account")}>Мій профіль</Link>
             </>
           ) : (
             <>
               <Link className="btn btn-primary" href={withBasePath("/auth/sign-in")}>Увійти</Link>
+              <Link className="btn btn-secondary" href={withBasePath("/sentences")}>🎲 Генератор речень</Link>
               <Link className="btn btn-ghost" href={withBasePath("/auth/sign-up")}>Реєстрація</Link>
             </>
           )}
@@ -91,6 +92,37 @@ export default function Home() {
             <div className="text-2xl mb-2">🎲</div>
             <h3 className="font-semibold mb-2">Генератор речень</h3>
             <p className="text-sm text-gray-600">Створюйте речення для тренування слів</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Генератор речень */}
+      <div className="card p-6 bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="text-4xl">🎲</div>
+          <div>
+            <h2 className="text-2xl font-semibold">Генератор речень</h2>
+            <p className="text-gray-600">Створюйте речення для тренування слів</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-3">✨ Можливості генератора</h3>
+            <ul className="text-gray-600 space-y-2">
+              <li>• <strong>Шаблонні речення</strong> - генеруйте на основі готових шаблонів</li>
+              <li>• <strong>Різні рівні</strong> - початківець, середній, просунутий</li>
+              <li>• <strong>Багато мов</strong> - англійська та українська</li>
+              <li>• <strong>Категорії</strong> - present-simple, past-simple, complex</li>
+              <li>• <strong>Копіювання</strong> - зручне копіювання всіх речень</li>
+            </ul>
+          </div>
+          <div className="flex items-center justify-center">
+            <Link 
+              className="btn btn-primary btn-lg text-lg px-8 py-4"
+              href={withBasePath("/sentences")}
+            >
+              🎲 Спробувати генератор
+            </Link>
           </div>
         </div>
       </div>

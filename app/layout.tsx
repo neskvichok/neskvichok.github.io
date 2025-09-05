@@ -61,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </>
                 ) : (
                   <>
+                    <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/sentences")}>Речення</Link>
                     <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/auth/sign-in")}>Увійти</Link>
                     <Link className="btn btn-primary text-xs md:text-sm" href={withBasePath("/auth/sign-up")}>Реєстрація</Link>
                   </>
