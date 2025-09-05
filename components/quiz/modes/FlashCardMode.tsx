@@ -8,6 +8,12 @@ interface FlashCardModeProps {
   onGameStateChange?: (isActive: boolean) => void;
 }
 
+interface WordProgress {
+  wordId: string;
+  knownCount: number;
+  direction: 'hint-to-answer' | 'answer-to-hint';
+}
+
 export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps) {
   const [words, setWords] = useState<QuizWord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -19,9 +25,8 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
   const [skippedCount, setSkippedCount] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
-  const [knownWords, setKnownWords] = useState<Set<string>>(new Set());
-  const [unknownWords, setUnknownWords] = useState<Set<string>>(new Set());
-  const [reviewWords, setReviewWords] = useState<Set<string>>(new Set());
+  const [wordProgress, setWordProgress] = useState<Map<string, WordProgress>>(new Map());
+  const [currentDirection, setCurrentDirection] = useState<'hint-to-answer' | 'answer-to-hint'>('hint-to-answer');
   
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,9 +46,8 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
       setSkippedCount(0);
       setStartTime(null);
       setEndTime(null);
-      setKnownWords(new Set());
-      setUnknownWords(new Set());
-      setReviewWords(new Set());
+      setWordProgress(new Map());
+      setCurrentDirection('hint-to-answer');
     }
   }, [setDef]);
 
@@ -66,43 +70,65 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
   const markAsKnown = async () => {
     if (!currentWord) return;
     
-    setKnownWords(prev => new Set([...prev, currentWord.id]));
+    const currentProgress = wordProgress.get(currentWord.id) || { wordId: currentWord.id, knownCount: 0, direction: currentDirection };
+    const newKnownCount = currentProgress.knownCount + 1;
+    
+    setWordProgress(prev => new Map(prev.set(currentWord.id, {
+      ...currentProgress,
+      knownCount: newKnownCount
+    })));
+    
     setCorrectCount(prev => prev + 1);
     
     // Зберігаємо прогрес
-    await saveWordProgress(null, currentWord.originalSetId || setDef.id, currentWord.id, { shortMemory: 20 }); // Високий прогрес для відомих слів
+    await saveWordProgress(null, currentWord.originalSetId || setDef.id, currentWord.id, { shortMemory: Math.min(newKnownCount * 4, 20) });
     
-    nextWord();
+    // Якщо слово вивчено (5 разів "Знаю"), переходимо до наступного
+    if (newKnownCount >= 5) {
+      nextWord();
+    } else {
+      // Інакше змінюємо напрямок і показуємо знову
+      setCurrentDirection(prev => prev === 'hint-to-answer' ? 'answer-to-hint' : 'hint-to-answer');
+      setIsFlipped(false);
+    }
   };
 
   const markAsUnknown = async () => {
     if (!currentWord) return;
     
-    setUnknownWords(prev => new Set([...prev, currentWord.id]));
+    const currentProgress = wordProgress.get(currentWord.id) || { wordId: currentWord.id, knownCount: 0, direction: currentDirection };
+    
+    setWordProgress(prev => new Map(prev.set(currentWord.id, {
+      ...currentProgress,
+      knownCount: Math.max(0, currentProgress.knownCount - 1) // Зменшуємо прогрес
+    })));
+    
     setIncorrectCount(prev => prev + 1);
     
     // Зберігаємо прогрес
-    await saveWordProgress(null, currentWord.originalSetId || setDef.id, currentWord.id, { shortMemory: 1 }); // Низький прогрес для невідомих слів
+    await saveWordProgress(null, currentWord.originalSetId || setDef.id, currentWord.id, { shortMemory: Math.max(0, (currentProgress.knownCount - 1) * 4) });
     
-    nextWord();
+    // Змінюємо напрямок і показуємо знову
+    setCurrentDirection(prev => prev === 'hint-to-answer' ? 'answer-to-hint' : 'hint-to-answer');
+    setIsFlipped(false);
   };
 
   const markForReview = async () => {
     if (!currentWord) return;
     
-    setReviewWords(prev => new Set([...prev, currentWord.id]));
     setSkippedCount(prev => prev + 1);
     
-    // Зберігаємо прогрес
-    await saveWordProgress(null, currentWord.originalSetId || setDef.id, currentWord.id, { shortMemory: 5 }); // Середній прогрес для повторення
-    
-    nextWord();
+    // Змінюємо напрямок і показуємо знову
+    setCurrentDirection(prev => prev === 'hint-to-answer' ? 'answer-to-hint' : 'hint-to-answer');
+    setIsFlipped(false);
   };
 
   const nextWord = () => {
     if (currentIndex < words.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setIsFlipped(false);
+      // Випадково вибираємо напрямок для наступного слова
+      setCurrentDirection(Math.random() > 0.5 ? 'hint-to-answer' : 'answer-to-hint');
     } else {
       finishSession();
     }
@@ -118,9 +144,8 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
     setSkippedCount(0);
     setStartTime(null);
     setEndTime(null);
-    setKnownWords(new Set());
-    setUnknownWords(new Set());
-    setReviewWords(new Set());
+    setWordProgress(new Map());
+    setCurrentDirection('hint-to-answer');
     onGameStateChange?.(false);
   };
 
@@ -159,10 +184,11 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h3 className="font-semibold text-blue-800 mb-2">Як працює режим:</h3>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Подивіться на слово/фразу</li>
+            <li>• Подивіться на слово/фразу або відповідь</li>
             <li>• Натисніть "Показати відповідь"</li>
             <li>• Оцініть свої знання: "Знаю", "Не знаю", "Повторити"</li>
-            <li>• Переходьте до наступного слова</li>
+            <li>• Потрібно 5 разів сказати "Знаю", щоб слово зникло</li>
+            <li>• Картки показуються в обох напрямках</li>
           </ul>
         </div>
 
@@ -248,6 +274,19 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
             style={{ width: `${progress}%` }}
           ></div>
         </div>
+        {currentWord && (
+          <div className="mt-2 text-center">
+            <div className="text-xs text-gray-500">
+              Прогрес цього слова: {wordProgress.get(currentWord.id)?.knownCount || 0}/5
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+              <div 
+                className="bg-green-500 h-1 rounded-full transition-all duration-300"
+                style={{ width: `${((wordProgress.get(currentWord.id)?.knownCount || 0) / 5) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Флеш-картка */}
@@ -259,22 +298,32 @@ export function FlashCardMode({ setDef, onGameStateChange }: FlashCardModeProps)
           <div className="text-center">
             {!isFlipped ? (
               <div>
-                <div className="text-sm text-gray-500 mb-2">Слово/Фраза</div>
+                <div className="text-sm text-gray-500 mb-2">
+                  {currentDirection === 'hint-to-answer' ? 'Слово/Фраза' : 'Відповідь'}
+                </div>
                 <div className="text-lg md:text-2xl font-bold text-gray-800">
-                  {currentWord?.hint}
+                  {currentDirection === 'hint-to-answer' 
+                    ? currentWord?.hint 
+                    : (Array.isArray(currentWord?.answer) ? currentWord.answer.join(", ") : currentWord?.answer)
+                  }
                 </div>
                 <div className="text-sm text-gray-400 mt-4">
-                  Натисніть, щоб показати відповідь
+                  Натисніть, щоб показати {currentDirection === 'hint-to-answer' ? 'відповідь' : 'слово/фразу'}
                 </div>
               </div>
             ) : (
               <div>
-                <div className="text-sm text-gray-500 mb-2">Відповідь</div>
+                <div className="text-sm text-gray-500 mb-2">
+                  {currentDirection === 'hint-to-answer' ? 'Відповідь' : 'Слово/Фраза'}
+                </div>
                 <div className="text-lg md:text-xl font-semibold text-gray-800">
-                  {Array.isArray(currentWord?.answer) ? currentWord.answer.join(", ") : currentWord?.answer}
+                  {currentDirection === 'hint-to-answer' 
+                    ? (Array.isArray(currentWord?.answer) ? currentWord.answer.join(", ") : currentWord?.answer)
+                    : currentWord?.hint
+                  }
                 </div>
                 <div className="text-sm text-gray-400 mt-4">
-                  Натисніть, щоб приховати відповідь
+                  Натисніть, щоб приховати {currentDirection === 'hint-to-answer' ? 'відповідь' : 'слово/фразу'}
                 </div>
               </div>
             )}
