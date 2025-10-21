@@ -51,7 +51,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 user ? (
                   <>
                     <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/quiz")}>Квізи</Link>
-                    <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/sentences")}>Речення</Link>
                     <Link className="btn btn-ghost text-xs md:text-sm hidden sm:inline-flex" href={withBasePath("/quiz/manage")}>Керувати</Link>
                     <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/account")}>Профіль</Link>
                     <Link href={withBasePath("/account/settings")} aria-label="Налаштування акаунту" className="w-8 h-8 rounded-full bg-black text-white grid place-items-center text-sm">
@@ -61,7 +60,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </>
                 ) : (
                   <>
-                    <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/sentences")}>Речення</Link>
                     <Link className="btn btn-ghost text-xs md:text-sm" href={withBasePath("/auth/sign-in")}>Увійти</Link>
                     <Link className="btn btn-primary text-xs md:text-sm" href={withBasePath("/auth/sign-up")}>Реєстрація</Link>
                   </>

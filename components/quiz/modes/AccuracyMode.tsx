@@ -153,9 +153,8 @@ export function AccuracyMode({ setDef, onGameStateChange }: { setDef: QuizSet; o
 
   function normalizeText(text: string): string {
     return text
-      .toLowerCase()
       .replace(/\s+/g, '')
-      .replace(/[^\wа-яіїєґ]/g, '');
+      .replace(/[^\wа-яіїєґА-ЯІЇЄҐ]/g, '');
   }
 
   function checkAnswer() {

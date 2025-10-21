@@ -159,9 +159,8 @@ export function SpeedMode({ setDef, onGameStateChange }: { setDef: QuizSet; onGa
 
   function normalizeText(text: string): string {
     return text
-      .toLowerCase()
       .replace(/\s+/g, '')
-      .replace(/[^\wа-яіїєґ]/g, '');
+      .replace(/[^\wа-яіїєґА-ЯІЇЄҐ]/g, '');
   }
 
   function checkAnswer() {

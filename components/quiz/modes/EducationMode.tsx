@@ -207,12 +207,11 @@ export function EducationMode({ setDef }: { setDef: QuizSet }) {
     setCurrent(shuffledPool.length ? shuffledPool[0] : null);
   }
 
-  // Функція для нормалізації тексту (видаляє пробіли, приводить до нижнього регістру)
+  // Функція для нормалізації тексту (видаляє пробіли)
   function normalizeText(text: string): string {
     return text
-      .toLowerCase()
       .replace(/\s+/g, '') // Видаляє всі пробіли, табуляції, переноси рядків
-      .replace(/[^\wа-яіїєґ]/g, ''); // Видаляє всі символи крім букв і цифр
+      .replace(/[^\wа-яіїєґА-ЯІЇЄҐ]/g, ''); // Видаляє всі символи крім букв і цифр
   }
 
   // Автоматична перевірка під час введення
